@@ -91,9 +91,8 @@
       tree-sitter      # nvim-treesitter compilation
     ];
   };
-  # Symlink your existing nvim dotfiles config.
-  # Uncomment once your dotfiles repo is cloned:
-  # home.file.".config/nvim".source = ./config/nvim;
+  
+  home.file.".config/nvim".source = ./config/nvim;
 
   # ── Catppuccin ────────────────────────────────────────────────────────
   # Mocha (darkest) variant applied across terminal and tools.
@@ -223,8 +222,8 @@
   ];
 
   # ── Hyprland config (symlink from dotfiles once you have it) ──────────
-  # home.file.".config/hypr/hyprland.conf".source = ./config/hypr/hyprland.conf;
-  # home.file.".config/waybar".source             = ./config/waybar;
-  # home.file.".config/mako/config".source        = ./config/mako/config;
-  # home.file.".config/wofi".source               = ./config/wofi;
+  home.file.".config/hypr/hyprland.conf".source = ./config/hypr/hyprland.conf;
+  home.file.".config/waybar".source             = ./config/waybar;
+  home.file.".config/mako/config".source        = ./config/mako/config;
+  home.file.".config/wofi".source               = ./config/wofi;
 }
