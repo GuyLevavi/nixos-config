@@ -1,7 +1,4 @@
-# Catppuccin Mocha
-background-color=#1e1e2e
-text-color=#cdd6f4
-border-color=#cba6f7
+# Mako notification daemon — colors injected by catppuccin-nix (catppuccin.mako.enable)
 border-radius=8
 border-size=2
 padding=12
@@ -11,12 +8,4 @@ width=320
 height=110
 font=JetBrainsMono Nerd Font 12
 
-[urgency=low]
-border-color=#6c7086
-
-[urgency=normal]
-border-color=#cba6f7
-
-[urgency=high]
-border-color=#f38ba8
-background-color=#1e1e2e
+default-timeout=5000

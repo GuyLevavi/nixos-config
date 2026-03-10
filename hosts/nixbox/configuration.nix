@@ -12,7 +12,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   # ── Network ───────────────────────────────────────────────────────────
-  networking.hostName = "nixbox"; # change to whatever you want
+  networking.hostName = "nixbox";
   networking.networkmanager.enable = true;
 
   # ── Locale & timezone ─────────────────────────────────────────────────
@@ -39,12 +39,27 @@
     xwayland.enable = true;
   };
 
-  # ── Display manager: greetd + tuigreet ────────────────────────────────
+  # uwsm — Universal Wayland Session Manager.
+  # Wraps Hyprland in a proper systemd user session so greetd can launch
+  # it without triggering the "not designed to be launched by a DM" warning.
+  # Hyprland ships a hyprland-uwsm.desktop for exactly this purpose.
+  programs.uwsm = {
+    enable = true;
+    waylandCompositors.hyprland = {
+      prettyName = "Hyprland";
+      comment     = "Hyprland via uwsm";
+      binPath     = "/run/current-system/sw/bin/Hyprland";
+    };
+  };
+
+  # ── Display manager: greetd + tuigreet ───────────────────────────────
+  # tuigreet hands off to uwsm, which starts Hyprland inside a clean
+  # systemd user session — no DM-launch warning, password on boot.
   services.greetd = {
     enable = true;
     settings = {
       default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
         user = "greeter";
       };
     };
@@ -68,13 +83,22 @@
 
   # ── Audio: pipewire ───────────────────────────────────────────────────
   services.pipewire = {
-    enable          = true;
-    alsa.enable     = true;
+    enable            = true;
+    alsa.enable       = true;
     alsa.support32Bit = true;
-    pulse.enable    = true;
+    pulse.enable      = true;
   };
   hardware.pulseaudio.enable = false; # replaced by pipewire
   security.rtkit.enable = true;
+
+  # ── Bluetooth ─────────────────────────────────────────────────────────
+  # blueman provides a tray applet + GUI manager (blueman-applet).
+  # hardware.bluetooth.powerOnBoot keeps the adapter on across reboots.
+  hardware.bluetooth = {
+    enable        = true;
+    powerOnBoot   = true;
+  };
+  services.blueman.enable = true;   # DBus service + blueman-applet
 
   # ── Polkit (Hyprland privilege escalation) ────────────────────────────
   security.polkit.enable = true;
@@ -82,8 +106,12 @@
   # ── Podman ────────────────────────────────────────────────────────────
   virtualisation.podman = {
     enable = true;
-    dockerCompat = true; # type 'docker', get podman
+    dockerCompat = true;          # type 'docker', get podman
     defaultNetwork.settings.dns_enabled = true;
+    autoPrune = {
+      enable = true;
+      dates  = "weekly";
+    };
   };
 
   # ── User ──────────────────────────────────────────────────────────────
@@ -104,6 +132,7 @@
     curl
     pciutils   # lspci — GPU diagnostics
     usbutils
+    claude-code
   ];
 
   # ── Fonts ─────────────────────────────────────────────────────────────
@@ -113,11 +142,24 @@
     noto-fonts
     noto-fonts-color-emoji
   ];
+  # RGB subpixel rendering sharpens text significantly on LCD/LED panels.
+  # medium hinting gives crisper UI text than the default "slight".
+  fonts.fontconfig = {
+    subpixel.rgba  = "rgb";
+    hinting.style  = "medium";
+  };
 
   # ── Nix settings ──────────────────────────────────────────────────────
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store   = true;
+  };
+
+  # Automatic garbage collection (mirrors the manual `gcold` alias)
+  nix.gc = {
+    automatic = true;
+    dates     = "weekly";
+    options   = "--delete-older-than 14d";
   };
 
   system.stateVersion = "25.05"; # DO NOT change after install
