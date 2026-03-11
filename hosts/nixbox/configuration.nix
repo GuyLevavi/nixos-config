@@ -59,7 +59,7 @@
     enable = true;
     settings = {
       default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
         user = "greeter";
       };
     };
@@ -88,7 +88,7 @@
     alsa.support32Bit = true;
     pulse.enable      = true;
   };
-  hardware.pulseaudio.enable = false; # replaced by pipewire
+  services.pulseaudio.enable = false; # replaced by pipewire
   security.rtkit.enable = true;
 
   # ── Bluetooth ─────────────────────────────────────────────────────────

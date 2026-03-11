@@ -12,7 +12,7 @@ home/
   base.nix    # headless: bash, nushell, starship, zoxide, fzf, git+delta, neovim+LSPs,
               #           lazygit, ripgrep, fd, bat, eza, btop, dust, sd, procs,
               #           podman-compose, lazydocker, uv, yazi, tmux, glow, lnav,
-              #           fastfetch, k9s, helm, posting, harlequin, opencode
+              #           fastfetch, k9s, helm, posting, opencode
   gui.nix     # imports base.nix + Hyprland, Waybar, Kitty, Wofi, Mako,
               #           browsers, thunar, screenshotting, swww, hyprlock,
               #           keepassxc, gtk, cursor theme
@@ -109,15 +109,7 @@ docker run -it -v ~/.ssh:/home/gl/.ssh:ro dev
 
 ### RunAI CLI
 
-RunAI CLI is not in nixpkgs. Install it in the Dockerfile before the Nix step:
-
-```dockerfile
-# After useradd, before USER gl:
-RUN curl -L https://app.run.ai/cli/linux/runai -o /usr/local/bin/runai && \
-    chmod +x /usr/local/bin/runai
-```
-
-Or use a fetchurl derivation in a Nix overlay if a stable tarball URL exists.
+Will be installed inside airgapped env, from the internal net specific RunAI instance.
 
 ---
 
@@ -168,7 +160,7 @@ Less composable — updates require re-bundling the full archive.
 | Shell in WSL | nushell (via bash exec guard) | consistent with nixbox; guard already handles nix-shell |
 | Python LSP | basedpyright (not pyright) | actively maintained fork, better defaults, same LSP protocol |
 | Python formatter | ruff (+ black kept) | ruff covers lint+format; black kept for projects that require it |
-| Git diffs | delta (programs.git.delta.enable) | syntax-highlighted diffs; catppuccin.delta themes it |
+| Git diffs | delta (programs.delta.enable) | syntax-highlighted diffs; catppuccin.delta themes it |
 | Terminal multiplexer | tmux | essential for persistent sessions over SSH/WSL |
 | Git credentials headless | empty helper (SSH keys or prompt) | keepassxc requires a running GUI; base.nix avoids the assumption |
 | Git credentials GUI | keepassxc (lib.mkForce in gui.nix) | overrides the empty helper from base.nix |

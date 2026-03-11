@@ -14,7 +14,7 @@
 
   # ── Git credential override ────────────────────────────────────────────
   # KeePassXC runs as a tray app on nixbox; override the empty helper from base.
-  programs.git.extraConfig.credential.helper = lib.mkForce "keepassxc";
+  programs.git.settings.credential.helper = lib.mkForce "keepassxc";
 
   # ── Kitty ─────────────────────────────────────────────────────────────
   programs.kitty = {

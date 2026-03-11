@@ -109,15 +109,19 @@
   #   - gui.nix sets it to "keepassxc" (GUI app, always running on nixbox)
   #   - headless: use SSH keys or let git prompt
   programs.git = {
-    enable    = true;
-    userName  = "guy";
-    userEmail = "guylevavi@gmail.com";
-    delta.enable = true;
-    extraConfig = {
+    enable   = true;
+    settings = {
+      user.name  = "guy";
+      user.email = "guylevavi@gmail.com";
       init.defaultBranch = "main";
       pull.rebase        = true;
       core.editor        = "nvim";
     };
+  };
+
+  programs.delta = {
+    enable               = true;
+    enableGitIntegration = true;
   };
 
   programs.lazygit.enable = true;
@@ -202,7 +206,7 @@
 
     # Dev TUIs
     posting    # HTTP client TUI (wraps httpx)
-    harlequin  # SQL TUI (DuckDB, Postgres, etc.)
+    # harlequin  # SQL TUI — broken in nixpkgs unstable (tomlkit<0.14 constraint)
   ];
 
   # ── Podman rootless socket ─────────────────────────────────────────────
