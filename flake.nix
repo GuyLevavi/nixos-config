@@ -2,7 +2,7 @@
   description = "guy's nixos";
 
   inputs = {
-    # nixos-unstable for up-to-date Hyprland, Neovim, Nushell
+    # nixos-unstable for up-to-date KDE Plasma, Neovim, Nushell
     nixpkgs.url = "nixpkgs/nixos-unstable";
 
     home-manager = {
@@ -15,9 +15,15 @@
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, catppuccin, ... }: {
+  outputs = { self, nixpkgs, home-manager, catppuccin, plasma-manager, ... }: {
     nixosConfigurations = {
 
       # Intel desktop (primary machine)
@@ -35,6 +41,7 @@
                 imports = [
                   ./home.nix
                   catppuccin.homeModules.catppuccin
+                  plasma-manager.homeModules.plasma-manager
                 ];
               };
               backupFileExtension = "backup";
