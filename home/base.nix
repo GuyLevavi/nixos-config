@@ -63,10 +63,7 @@
       }
 
       # Aliases
-      alias rb     = sudo nixos-rebuild switch --flake /etc/nixos#nixbox
-      alias update = sudo nix flake update /etc/nixos
       alias nsh    = nix-shell -p
-      alias gcold  = sudo nix-collect-garbage --delete-older-than 14d
       alias vim    = nvim
       alias vi     = nvim
       alias ll     = eza -la --icons --git
