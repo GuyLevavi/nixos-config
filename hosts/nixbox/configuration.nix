@@ -133,6 +133,8 @@
     pciutils   # lspci — GPU diagnostics
     usbutils
     claude-code
+    gh         # GitHub CLI
+    glab       # GitLab CLI
   ];
 
   # ── Fonts ─────────────────────────────────────────────────────────────
