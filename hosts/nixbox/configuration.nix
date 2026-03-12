@@ -33,53 +33,17 @@
     LIBVA_DRIVER_NAME = "iHD";
   };
 
-  # ── Hyprland ──────────────────────────────────────────────────────────
-  programs.hyprland = {
+  # ── Display manager: SDDM (Wayland) ──────────────────────────────────
+  services.displayManager.sddm = {
     enable = true;
-    xwayland.enable = true;
+    wayland.enable = true;
   };
 
-  # uwsm — Universal Wayland Session Manager.
-  # Wraps Hyprland in a proper systemd user session so greetd can launch
-  # it without triggering the "not designed to be launched by a DM" warning.
-  # Hyprland ships a hyprland-uwsm.desktop for exactly this purpose.
-  programs.uwsm = {
-    enable = true;
-    waylandCompositors.hyprland = {
-      prettyName = "Hyprland";
-      comment     = "Hyprland via uwsm";
-      binPath     = "/run/current-system/sw/bin/Hyprland";
-    };
-  };
+  # ── Desktop: KDE Plasma 6 ─────────────────────────────────────────────
+  services.desktopManager.plasma6.enable = true;
 
-  # ── Display manager: greetd + tuigreet ───────────────────────────────
-  # tuigreet hands off to uwsm, which starts Hyprland inside a clean
-  # systemd user session — no DM-launch warning, password on boot.
-  services.greetd = {
-    enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
-        user = "greeter";
-      };
-    };
-  };
-  # Silence TTY output noise on greetd startup
-  systemd.services.greetd.serviceConfig = {
-    Type             = "idle";
-    StandardInput    = "tty";
-    StandardOutput   = "tty";
-    StandardError    = "journal";
-    TTYReset         = true;
-    TTYVHangup       = true;
-    TTYVTDisallocate = true;
-  };
-
-  # ── XDG portal (screen sharing, file pickers) ─────────────────────────
-  xdg.portal = {
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
-  };
+  # KDE Connect — phone integration (clipboard sync, notifications, etc.)
+  programs.kdeconnect.enable = true;
 
   # ── Audio: pipewire ───────────────────────────────────────────────────
   services.pipewire = {
