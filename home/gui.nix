@@ -12,6 +12,14 @@
   catppuccin.hyprlock.enable = true;
   catppuccin.mako.enable     = true;
 
+  # ── nixbox-only shell aliases ─────────────────────────────────────────
+  # Not present in base.nix — WSL/headless has no nixos-rebuild.
+  programs.nushell.configFile.text = lib.mkAfter ''
+    alias rb     = sudo nixos-rebuild switch --flake /etc/nixos#nixbox
+    alias update = sudo nix flake update /etc/nixos
+    alias gcold  = sudo nix-collect-garbage --delete-older-than 14d
+  '';
+
   # ── Git credential override ────────────────────────────────────────────
   # KeePassXC runs as a tray app on nixbox; override the empty helper from base.
   programs.git.settings.credential.helper = lib.mkForce "keepassxc";
