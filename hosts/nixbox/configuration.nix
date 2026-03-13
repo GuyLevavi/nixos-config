@@ -97,6 +97,7 @@
     pciutils   # lspci — GPU diagnostics
     usbutils
     claude-code
+    polonium  # auto-tiling KWin script (system pkg so KWin can discover it)
   ];
 
   # ── Fonts ─────────────────────────────────────────────────────────────
