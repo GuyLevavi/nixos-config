@@ -29,7 +29,7 @@
   # ── Hyprpaper ─────────────────────────────────────────────────────────
   # Wallpaper daemon. Preload and wallpaper lines are commented out — drop in
   # your wallpaper path and uncomment when ready.
-  programs.hyprpaper = {
+  services.hyprpaper = {
     enable   = true;
     settings = {
       # preload  = [ "/home/gl/wallpapers/your-wallpaper.png" ];
@@ -329,7 +329,7 @@
   # catppuccin.rofi.enable writes the Mocha theme; config.rasi sources it.
   programs.rofi = {
     enable  = true;
-    package = pkgs.rofi-wayland;
+    package = pkgs.rofi;
     extraConfig = {
       modi              = "drun,run,filebrowser";
       show-icons        = true;
@@ -408,7 +408,6 @@
 
     # Hyprland ecosystem
     hyprpaper       # wallpaper daemon
-    rofi-wayland    # app launcher (wayland-native)
     swayosd         # volume/brightness OSD popup
     wlogout         # power/logout menu (Super+Shift+E)
     cliphist        # clipboard history manager
