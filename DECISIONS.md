@@ -452,3 +452,20 @@ Additions vs previous version:
 - `misc { focus_on_activate = true }`
 - Window rules section added: float common dialogs, float `blueman-manager`/`pwvucontrol`/`nm-connection-editor`/`keepassxc`, `noblur` for kitty, `immediate` for fullscreen
 - Removed dangerous `$mod SHIFT, M, exit` bind (wlogout on `$mod SHIFT, E` is the safe exit path)
+
+### Decision 25 — windowrule migration, calendar Pango colors, rofi blur, wallpaper selector
+
+**windowrule migration:** Hyprland 0.54 deprecated `windowrulev2` — all 15 rules triggered config error popups on startup. Renamed all to `windowrule` (same field syntax, keyword change only).
+
+**Calendar Pango colors:** Waybar calendar `format` strings use Pango markup. Pango does not resolve GTK CSS variables (`@text` etc.) at render time — they were being passed as literal strings and silently ignored. Replaced with hardcoded Catppuccin Mocha hex values: `@text` → `#cdd6f4`, `@yellow` → `#f9e2af`, `@red` → `#f38ba8`.
+
+**rofi blur:** Added `layerrule = blur, rofi` and `layerrule = ignorezero, rofi` to `hyprland.conf` so the compositor blur effect applies behind rofi's `transparency="real"` layer surface.
+
+**Wallpaper selector:**
+- Stayed with hyprpaper (not swww) — already configured, static wallpapers are sufficient.
+- `wallpaper-select`: rofi dmenu with `-format 'i'` returns selection index; resolves to path from `images[]` bash array built from `~/Pictures/wallpapers/`; applies via `hyprctl hyprpaper preload` + `hyprctl hyprpaper wallpaper`; persists path to `~/.config/hypr/.wallpaper_last`.
+- `wallpaper-init`: reads `~/.config/hypr/.wallpaper_last`, sleeps 0.5 s for hyprpaper to start, re-applies on login via `exec-once`.
+- Both scripts exposed as `pkgs.writeShellScriptBin` in `home.packages` (gui.nix) so they are on `$PATH`.
+- Keybind: `$mod W` → `wallpaper-select`.
+- rofi theme: `config/rofi/wallpaper.rasi` — 4-column thumbnail grid, `transparency="real"`, near-transparent background, mauve border, `8em` icon size for image previews.
+- `~/Pictures/wallpapers/` does not exist by default — user must create and populate it before the selector is functional.

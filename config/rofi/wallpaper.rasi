@@ -1,0 +1,103 @@
+/* Rofi wallpaper picker — Catppuccin Mocha, 4-column thumbnail grid.
+ * Sourced by wallpaper-select when invoked with -config ~/.config/rofi/wallpaper.rasi.
+ * Requires: layerrule = blur, rofi  (in hyprland.conf, already set)
+ * Relies on rofi's icon rendering: when -show-icons is set and an entry's icon
+ * is an absolute path to an image file, rofi renders the image as the icon.
+ */
+
+/* Catppuccin Mocha palette (hardcoded — this file is not processed by waybar's
+ * @import mocha.css; Pango/GTK/rofi theming uses direct rgba() values).        */
+* {
+    base:       rgba(30,  30,  46,  1);
+    mantle:     rgba(24,  24,  37,  1);
+    surface0:   rgba(49,  50,  68,  1);
+    overlay0:   rgba(108, 112, 134, 1);
+    text:       rgba(205, 214, 244, 1);
+    mauve:      rgba(203, 166, 247, 1);
+    subtext1:   rgba(186, 194, 222, 1);
+
+    font:       "JetBrainsMono Nerd Font Bold 11";
+
+    /* Full transparency — Hyprland blur shows through */
+    background-color:  transparent;
+    text-color:        @text;
+    border-color:      @mauve;
+}
+
+window {
+    transparency:      "real";
+    background-color:  rgba(30, 30, 46, 0.15);
+    border:            2px solid;
+    border-color:      @mauve;
+    border-radius:     12px;
+    width:             76%;
+    padding:           12px;
+    location:          center;
+    anchor:            center;
+}
+
+mainbox {
+    background-color:  transparent;
+    children:          [ inputbar, message, listview ];
+    spacing:           8px;
+}
+
+inputbar {
+    background-color:  rgba(49, 50, 68, 0.6);
+    border-radius:     8px;
+    padding:           6px 10px;
+    children:          [ prompt, entry ];
+}
+
+prompt {
+    text-color:        @mauve;
+    padding:           0 6px 0 0;
+}
+
+entry {
+    placeholder:       "wallpaper...";
+    placeholder-color: @overlay0;
+}
+
+message {
+    padding:           4px 0;
+}
+
+/* 4-column icon grid — icons are the thumbnail images themselves */
+listview {
+    background-color:  transparent;
+    columns:           4;
+    lines:             3;
+    scrollbar:         false;
+    spacing:           8px;
+    layout:            vertical;
+    fixed-height:      false;
+}
+
+element {
+    background-color:  transparent;
+    border-radius:     8px;
+    padding:           6px;
+    orientation:       vertical;
+    cursor:            pointer;
+}
+
+element selected {
+    background-color:  rgba(203, 166, 247, 0.2);
+    border:            2px solid;
+    border-color:      @mauve;
+}
+
+element-icon {
+    size:              8em;
+    border-radius:     6px;
+    cursor:            inherit;
+}
+
+element-text {
+    padding:           4px 0 0;
+    horizontal-align:  0.5;
+    font:              "JetBrainsMono Nerd Font Bold 9";
+    color:             @subtext1;
+    str:               "";  /* hide filename text — thumbnails speak for themselves */
+}

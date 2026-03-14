@@ -140,10 +140,10 @@
           mode-mon-col = 3;
           on-scroll    = 1;
           format = {
-            months   = "<span color='@text'><b>{}</b></span>";
-            days     = "<span color='@text'><b>{}</b></span>";
-            weekdays = "<span color='@yellow'><b>{}</b></span>";
-            today    = "<span color='@red'><b><u>{}</u></b></span>";
+            months   = "<span color='#cdd6f4'><b>{}</b></span>";
+            days     = "<span color='#cdd6f4'><b>{}</b></span>";
+            weekdays = "<span color='#f9e2af'><b>{}</b></span>";
+            today    = "<span color='#f38ba8'><b><u>{}</u></b></span>";
           };
         };
       };
@@ -345,8 +345,16 @@
     x11.enable = true;
   };
 
-  # ── Packages ──────────────────────────────────────────────────────────
+  # ── Wallpaper selector scripts ────────────────────────────────────────
+  # Wrapped as Nix derivations so they land on $PATH and are executable.
+  # wallpaper-select: rofi thumbnail picker → hyprpaper IPC
+  # wallpaper-init:   restores last wallpaper on session start (exec-once)
   home.packages = with pkgs; [
+    (pkgs.writeShellScriptBin "wallpaper-select"
+      (builtins.readFile ../config/scripts/wallpaper-select.sh))
+    (pkgs.writeShellScriptBin "wallpaper-init"
+      (builtins.readFile ../config/scripts/wallpaper-init.sh))
+
     # Credentials (GUI — KeePassXC requires a running display)
     keepassxc
     git-credential-keepassxc
@@ -368,4 +376,9 @@
     networkmanagerapplet  # nm-applet tray icon
     blueman         # bluetooth manager (blueman-manager on-click)
   ];
+
+  # ── Rofi wallpaper picker theme ───────────────────────────────────────
+  # Installed separately from catppuccin.rofi so it can override geometry
+  # and transparency for the wallpaper grid without touching the app launcher.
+  xdg.configFile."rofi/wallpaper.rasi".source = ../config/rofi/wallpaper.rasi;
 }
