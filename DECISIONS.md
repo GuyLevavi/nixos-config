@@ -469,3 +469,21 @@ Additions vs previous version:
 - Keybind: `$mod W` → `wallpaper-select`.
 - rofi theme: `config/rofi/wallpaper.rasi` — 4-column thumbnail grid, `transparency="real"`, near-transparent background, mauve border, `8em` icon size for image previews.
 - `~/Pictures/wallpapers/` does not exist by default — user must create and populate it before the selector is functional.
+
+### Decision 26 — windowrule syntax correction, layerrule syntax fix, Hebrew keyboard, dwindle split direction (2026-03-14)
+
+**windowrule syntax (corrected from Decision 25):** Decision 25 was wrong. In Hyprland 0.54:
+- `windowrule = float, class:^regex$` → **hard config error** — the parser treats `float` as a field name expecting `= value`, so `class:` is rejected as a malformed value.
+- `windowrulev2 = float, class:^regex$` → shows a deprecation warning popup on startup but **works correctly** (rule is applied).
+
+Reverted all 15 rules back to `windowrulev2`. Deprecation warnings are acceptable; hard errors are not.
+
+**layerrule syntax fix:** In 0.54 the `layerrule` comma separator between rule and target was removed.
+- Wrong: `layerrule = blur, rofi`
+- Correct: `layerrule = blur rofi`
+
+Both `blur` and `ignorezero` rules for rofi updated to the no-comma form.
+
+**Hebrew keyboard layout:** Added `kb_layout = us,il`, `kb_variant = ,` (empty variant = standard Hebrew), and `kb_options = grp:alt_shift_toggle` to the `input {}` block. Alt+Shift switches between US and Hebrew. No extra keybind needed — handled entirely by xkb at the compositor level.
+
+**Dwindle force_split:** Added `force_split = 2` to the `dwindle {}` block. With the default (`0`), new windows open on the side of the current window that the mouse cursor is on. `force_split = 2` always opens new windows to the right (horizontal split) or below (vertical split), regardless of cursor position — predictable behavior for keyboard-driven workflows.
