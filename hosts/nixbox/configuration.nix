@@ -33,52 +33,26 @@
     LIBVA_DRIVER_NAME = "iHD";
   };
 
-  # ── Hyprland ──────────────────────────────────────────────────────────
-  programs.hyprland = {
+  # ── Display manager: SDDM (Wayland) ──────────────────────────────────
+  services.displayManager.sddm = {
     enable = true;
-    xwayland.enable = true;
+    wayland.enable = true;
   };
 
-  # uwsm — Universal Wayland Session Manager.
-  # Wraps Hyprland in a proper systemd user session so greetd can launch
-  # it without triggering the "not designed to be launched by a DM" warning.
-  # Hyprland ships a hyprland-uwsm.desktop for exactly this purpose.
+  # ── Desktop: Hyprland ────────────────────────────────────────────────
+  # Registers hyprland.desktop session entry so SDDM can offer it.
+  programs.hyprland.enable = true;
+
+  # uwsm wraps Hyprland in a proper systemd user session (XDG activation,
+  # D-Bus scoping, clean teardown). Side-effect: switches dbus.implementation
+  # to "broker" — first activation MUST use nixos-rebuild boot, not switch.
   programs.uwsm = {
     enable = true;
     waylandCompositors.hyprland = {
       prettyName = "Hyprland";
-      comment     = "Hyprland via uwsm";
+      comment     = "Hyprland compositor managed by uwsm";
       binPath     = "/run/current-system/sw/bin/Hyprland";
     };
-  };
-
-  # ── Display manager: greetd + tuigreet ───────────────────────────────
-  # tuigreet hands off to uwsm, which starts Hyprland inside a clean
-  # systemd user session — no DM-launch warning, password on boot.
-  services.greetd = {
-    enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
-        user = "greeter";
-      };
-    };
-  };
-  # Silence TTY output noise on greetd startup
-  systemd.services.greetd.serviceConfig = {
-    Type             = "idle";
-    StandardInput    = "tty";
-    StandardOutput   = "tty";
-    StandardError    = "journal";
-    TTYReset         = true;
-    TTYVHangup       = true;
-    TTYVTDisallocate = true;
-  };
-
-  # ── XDG portal (screen sharing, file pickers) ─────────────────────────
-  xdg.portal = {
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
   };
 
   # ── Audio: pipewire ───────────────────────────────────────────────────
@@ -133,8 +107,7 @@
     pciutils   # lspci — GPU diagnostics
     usbutils
     claude-code
-    gh         # GitHub CLI
-    glab       # GitLab CLI
+    gh
   ];
 
   # ── Fonts ─────────────────────────────────────────────────────────────

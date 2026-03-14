@@ -1,4 +1,4 @@
-# home/gui.nix — GUI layer (Wayland / Hyprland) for nixbox
+# home/gui.nix — GUI layer (Hyprland) for nixbox
 # Imports base.nix and adds everything that requires a display server.
 { config, pkgs, lib, ... }:
 
@@ -7,14 +7,341 @@
 
   # ── GUI catppuccin modules ─────────────────────────────────────────────
   catppuccin.kitty.enable    = true;
-  catppuccin.waybar.enable   = true;
   catppuccin.hyprland.enable = true;
+  catppuccin.waybar.enable   = true;
   catppuccin.hyprlock.enable = true;
-  catppuccin.mako.enable     = true;
+  catppuccin.swaync.enable   = true;
+  catppuccin.rofi.enable     = true;
 
   # ── Git credential override ────────────────────────────────────────────
   # KeePassXC runs as a tray app on nixbox; override the empty helper from base.
   programs.git.settings.credential.helper = lib.mkForce "keepassxc";
+
+  # ── Hyprland ──────────────────────────────────────────────────────────
+  # systemd.enable = false: uwsm manages the systemd user session; enabling
+  # both causes double session management and broken environment activation.
+  wayland.windowManager.hyprland = {
+    enable         = true;
+    systemd.enable = false;
+    extraConfig    = builtins.readFile ../config/hypr/hyprland.conf;
+  };
+
+  # ── Hyprpaper ─────────────────────────────────────────────────────────
+  # Wallpaper daemon. Preload and wallpaper lines are commented out — drop in
+  # your wallpaper path and uncomment when ready.
+  programs.hyprpaper = {
+    enable   = true;
+    settings = {
+      # preload  = [ "/home/gl/wallpapers/your-wallpaper.png" ];
+      # wallpaper = [ ", /home/gl/wallpapers/your-wallpaper.png" ];
+      splash = false;
+    };
+  };
+
+  # ── Hyprlock ──────────────────────────────────────────────────────────
+  programs.hyprlock.enable = true;
+
+  # ── Hypridle ──────────────────────────────────────────────────────────
+  services.hypridle = {
+    enable = true;
+    settings = {
+      general = {
+        before_sleep_cmd = "hyprlock";
+        after_sleep_cmd  = "hyprctl dispatch dpms on";
+        lock_cmd         = "hyprlock";
+      };
+      listener = [
+        {
+          timeout    = 300; # 5 min
+          on-timeout = "hyprlock";
+        }
+        {
+          timeout    = 600; # 10 min
+          on-timeout = "hyprctl dispatch dpms off";
+          on-resume  = "hyprctl dispatch dpms on";
+        }
+      ];
+    };
+  };
+
+  # ── Waybar (Hyprlust-inspired) ─────────────────────────────────────────
+  # catppuccin.waybar.enable prepends @import "mocha.css" so @base, @mauve,
+  # @text, etc. are available in the style string below.
+  programs.waybar = {
+    enable = true;
+    settings = [{
+      layer        = "top";
+      position     = "top";
+      height       = 34;
+      width        = 1200;
+      margin-top   = 5;
+      margin-left  = 50;
+      margin-right = 50;
+      fixed-center = true;
+
+      modules-left   = [ "custom/menu" "custom/separator#blank" "hyprland/window" ];
+      modules-center = [ "hyprland/workspaces" ];
+      modules-right  = [ "idle_inhibitor" "group/hub" "custom/power" ];
+
+      # ── Left modules ────────────────────────────────────────────────
+      "custom/menu" = {
+        format   = "󱓟";
+        tooltip  = true;
+        exec     = "echo ; echo  app launcher";
+        interval = 86400;
+        on-click = "pkill rofi || rofi -show drun -modi run,drun,filebrowser,window";
+      };
+
+      "custom/separator#blank" = {
+        format   = "";
+        interval = "once";
+        tooltip  = false;
+      };
+
+      "hyprland/window" = {
+        format      = "󰣆 {title}";
+        max-length  = 40;
+        rewrite = {
+          "(.*) — Mozilla Firefox"   = " Firefox";
+          "^.*v( .*|$)"             = " Neovim";
+          "^.*~$"                   = "󰄛 Kitty";
+          "(.*) "                   = " Empty";
+        };
+      };
+
+      # ── Center modules ───────────────────────────────────────────────
+      "hyprland/workspaces" = {
+        format              = " {icon} ";
+        show-special        = false;
+        active-only         = false;
+        on-click            = "activate";
+        on-scroll-up        = "hyprctl dispatch workspace e+1";
+        on-scroll-down      = "hyprctl dispatch workspace e-1";
+        all-outputs         = true;
+        sort-by-number      = true;
+        persistent-workspaces = {
+          "1" = [];
+          "2" = [];
+          "3" = [];
+          "4" = [];
+        };
+        format-icons = {
+          "1"     = " ";
+          "2"     = " ";
+          "3"     = " ";
+          "4"     = " ";
+          focused = "";
+          default = "";
+        };
+      };
+
+      # ── Right modules ────────────────────────────────────────────────
+      "idle_inhibitor" = {
+        format       = "{icon}";
+        format-icons = {
+          activated   = " ";
+          deactivated = " ";
+        };
+      };
+
+      # group/hub: the right info pill — clock + network + bluetooth + audio + tray
+      "group/hub" = {
+        orientation = "inherit";
+        modules     = [ "clock" "network" "bluetooth" "pulseaudio" "tray" ];
+      };
+
+      "clock" = {
+        interval       = 1;
+        format         = "{:%H:%M}";
+        format-alt     = " {:%H:%M   %Y-%m-%d, %A}";
+        tooltip-format = "<tt><small>{calendar}</small></tt>";
+        calendar = {
+          mode        = "year";
+          mode-mon-col = 3;
+          on-scroll   = 1;
+          format = {
+            months   = "<span color='#cdd6f4'><b>{}</b></span>";
+            days     = "<span color='#cdd6f4'><b>{}</b></span>";
+            weekdays = "<span color='#f9e2af'><b>{}</b></span>";
+            today    = "<span color='#f38ba8'><b><u>{}</u></b></span>";
+          };
+        };
+      };
+
+      "network" = {
+        format-wifi       = "󰤨";
+        format-ethernet   = "󰈁";
+        format-disconnected = "󰖪";
+        format-linked     = "󰈁";
+        tooltip           = true;
+        tooltip-format-wifi = "{essid} ({signalStrength}%)";
+        tooltip-format-ethernet = "{ifname}";
+        tooltip-format-disconnected = "Disconnected";
+        on-click          = "nm-connection-editor";
+      };
+
+      "bluetooth" = {
+        format-on        = "";
+        format-off       = "󰂲";
+        format-disabled  = "";
+        format-connected = "";
+        tooltip          = true;
+        tooltip-format   = "{controller_alias}\n{num_connections} connected";
+        on-click         = "blueman-manager";
+      };
+
+      "pulseaudio" = {
+        format         = "{icon} {volume}%";
+        format-muted   = "󰖁";
+        format-icons   = {
+          default = [ "󰕿" "󰖀" "󰕾" ];
+        };
+        scroll-step    = 5;
+        on-click       = "pwvucontrol";
+        tooltip-format = "{desc} | {volume}%";
+      };
+
+      "tray" = {
+        icon-size = 16;
+        spacing   = 4;
+      };
+
+      "custom/power" = {
+        format   = "⏻";
+        tooltip  = true;
+        exec     = "echo ; echo 󰟡 power";
+        interval = 86400;
+        on-click = "wlogout";
+      };
+    }];
+
+    style = ''
+      /* Catppuccin Mocha — colors provided via @import mocha.css from catppuccin.waybar */
+
+      * {
+        all:            unset;
+        font-family:    "JetBrainsMono Nerd Font";
+        font-weight:    bold;
+        font-size:      13px;
+        min-height:     0;
+      }
+
+      window#waybar {
+        background:  transparent;
+        border-radius: 12px;
+      }
+
+      window#waybar.hidden {
+        opacity: 0.2;
+      }
+
+      /* ── Pills ───────────────────────────────────────────────────── */
+      .modules-left,
+      .modules-center,
+      .modules-right {
+        background:    alpha(@base, 0.85);
+        border:        1px solid @overlay0;
+        border-radius: 12px;
+        padding:       2px 6px;
+      }
+
+      .modules-left,
+      .modules-right {
+        border-color: @blue;
+      }
+
+      /* ── Per-module padding ──────────────────────────────────────── */
+      #clock,
+      #network,
+      #bluetooth,
+      #pulseaudio,
+      #idle_inhibitor,
+      #tray,
+      #window,
+      #workspaces,
+      #custom-menu,
+      #custom-power {
+        padding: 3px 6px;
+      }
+
+      /* ── Module accent colors (Hyprlust Catppuccin Mocha style) ──── */
+      #window          { color: @mauve;     }
+      #clock           { color: @yellow;    }
+      #network         { color: @teal;      }
+      #bluetooth       { color: @blue;      }
+      #pulseaudio      { color: @sapphire;  }
+      #pulseaudio.muted { color: @red;      }
+      #idle_inhibitor  { color: @blue;      }
+      #custom-menu     { color: @rosewater; }
+      #custom-power    { color: @red;       }
+
+      /* ── Workspaces ──────────────────────────────────────────────── */
+      #workspaces button {
+        box-shadow:   none;
+        text-shadow:  none;
+        border-radius: 9px;
+        padding:      0 4px;
+        transition:   all 0.3s cubic-bezier(.55,-0.68,.48,1.682);
+      }
+
+      #workspaces button:hover {
+        background-color: @surface0;
+        color:            @overlay0;
+        border-radius:    10px;
+        padding:          0 2px;
+      }
+
+      #workspaces button.active {
+        color:         @peach;
+        border-radius: 10px;
+        padding:       0 8px;
+        transition:    all 0.3s cubic-bezier(.55,-0.68,.48,1.682);
+      }
+
+      #workspaces button.urgent {
+        color:         @red;
+        border-radius: 0;
+      }
+
+      #workspaces button.persistent {
+        color:         @surface1;
+        border-radius: 10px;
+      }
+
+      /* ── Power button: red fill on hover, right-cap border-radius ── */
+      #custom-power:hover {
+        background:    @red;
+        color:         @base;
+        border-radius: 0 12px 12px 0;
+      }
+
+      /* ── Tray ────────────────────────────────────────────────────── */
+      #tray > .passive       { -gtk-icon-effect: dim;       }
+      #tray > .needs-attention { -gtk-icon-effect: highlight; }
+    '';
+  };
+
+  # ── Swaync (notification center — replaces mako) ──────────────────────
+  services.swaync.enable = true;
+
+  # ── Rofi ──────────────────────────────────────────────────────────────
+  # package = rofi-wayland for native Wayland rendering (no XWayland).
+  # catppuccin.rofi.enable writes the Mocha theme; config.rasi sources it.
+  programs.rofi = {
+    enable  = true;
+    package = pkgs.rofi-wayland;
+    extraConfig = {
+      modi              = "drun,run,filebrowser";
+      show-icons        = true;
+      display-drun      = "Apps";
+      display-run       = "Run";
+      display-filebrowser = "Files";
+      drun-display-format = "{name}";
+      hover-select      = true;
+      me-select-entry   = "MouseSecondary";
+      me-accept-entry   = "MousePrimary";
+    };
+  };
 
   # ── Kitty ─────────────────────────────────────────────────────────────
   programs.kitty = {
@@ -43,30 +370,10 @@
 
   programs.firefox.enable = true;
 
-  # ── Screen lock: hyprlock + hypridle ──────────────────────────────────
-  programs.hyprlock.enable = true;
-
-  services.hypridle = {
-    enable = true;
-    settings = {
-      general = {
-        lock_cmd         = "hyprlock";
-        before_sleep_cmd = "hyprlock";
-        after_sleep_cmd  = "hyprctl dispatch dpms on";
-      };
-      listener = [
-        {
-          timeout    = 300;
-          on-timeout = "hyprlock";
-        }
-        {
-          timeout    = 600;
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume  = "hyprctl dispatch dpms on";
-        }
-      ];
-    };
-  };
+  # Permanent fix: delete stale GTK backup before HM link generation runs.
+  home.activation.removeGtkBackup = lib.hm.dag.entryBefore ["linkGeneration"] ''
+    rm -f "${config.home.homeDirectory}/.gtkrc-2.0.backup"
+  '';
 
   # ── GTK dark theme + icon theme ───────────────────────────────────────
   gtk = {
@@ -88,278 +395,28 @@
     x11.enable = true;
   };
 
-  # ── Wayland packages ──────────────────────────────────────────────────
+  # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
-    # Wayland essentials
-    wofi                # launcher
-    grim                # screenshot
-    slurp               # region select
-    wl-clipboard        # wl-copy / wl-paste
-    wl-clip-persist     # keeps clipboard contents alive after source app closes
-    cliphist            # clipboard history manager
-    thunar              # GTK file manager (Super+E)
-    swww                # wallpaper daemon (wayland-native)
-    networkmanagerapplet # nm-applet for tray WiFi/VPN management
-
-    # Media / function keys
-    brightnessctl
-    playerctl
-    swayosd
-    pwvucontrol         # PipeWire volume mixer
-    wlogout             # Wayland logout/power menu
-
     # Credentials (GUI — KeePassXC requires a running display)
     keepassxc
     git-credential-keepassxc
+
+    # Clipboard / file access
+    wl-clipboard    # wl-copy / wl-paste (CLI clipboard interop)
+    thunar          # GTK file manager (quick picks)
+    pwvucontrol     # PipeWire volume mixer
+
+    # Hyprland ecosystem
+    hyprpaper       # wallpaper daemon
+    rofi-wayland    # app launcher (wayland-native)
+    swayosd         # volume/brightness OSD popup
+    wlogout         # power/logout menu (Super+Shift+E)
+    cliphist        # clipboard history manager
+    wl-clip-persist # persist clipboard when source app closes
+    grim            # screenshot (region capture)
+    slurp           # region selector (used with grim)
+    playerctl       # MPRIS media player control
+    networkmanagerapplet  # nm-applet tray icon
+    blueman         # bluetooth manager (blueman-manager on-click)
   ];
-
-  # ── Hyprland ──────────────────────────────────────────────────────────
-  wayland.windowManager.hyprland = {
-    enable         = true;
-    systemd.enable = false;
-    extraConfig    = builtins.readFile ../config/hypr/hyprland.conf;
-  };
-
-  # ── Waybar ────────────────────────────────────────────────────────────
-  programs.waybar = {
-    enable = true;
-    settings = [{
-      layer    = "top";
-      position = "top";
-      margin-top    = 6;
-      margin-left   = 12;
-      margin-right  = 12;
-      spacing       = 4;
-
-      "modules-left"   = [ "hyprland/workspaces" "hyprland/submap" "hyprland/window" ];
-      "modules-center" = [ "clock" ];
-      "modules-right"  = [ "mpris" "idle_inhibitor" "backlight" "battery" "pulseaudio" "network" "custom/bluetooth" "tray" "custom/power" ];
-
-      "hyprland/workspaces" = {
-        format         = "{name}";
-        on-click       = "activate";
-        on-scroll-up   = "hyprctl dispatch workspace e+1";
-        on-scroll-down = "hyprctl dispatch workspace e-1";
-      };
-
-      "hyprland/submap" = {
-        format  = " {}";
-        tooltip = false;
-      };
-
-      "hyprland/window" = {
-        format           = "{}";
-        max-length       = 50;
-        separate-outputs = true;
-      };
-
-      clock = {
-        format         = "{:%a %d %b  %H:%M}";
-        tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
-      };
-
-      battery = {
-        format          = "{capacity}% {icon}";
-        format-charging = "{capacity}% 󰂄";
-        format-plugged  = "{capacity}% 󰚥";
-        format-full     = "󰁹 full";
-        format-icons    = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
-        states = {
-          warning  = 30;
-          critical = 15;
-        };
-        tooltip-format = "{timeTo} — {power:.1f}W";
-      };
-
-      mpris = {
-        format         = "{player_icon} {title} - {artist}";
-        format-paused  = "{player_icon} {title}";
-        player-icons   = { default = ""; spotify = "󰓇"; firefox = "󰈹"; chromium = ""; };
-        status-icons   = { paused = ""; };
-        max-length     = 40;
-        tooltip        = false;
-      };
-
-      "idle_inhibitor" = {
-        format = "{icon}";
-        format-icons = {
-          activated   = "󰒳";
-          deactivated = "󰒲";
-        };
-        tooltip = false;
-      };
-
-      backlight = {
-        format       = "{icon} {percent}%";
-        format-icons = [ "󰃞" "󰃟" "󰃠" ];
-        tooltip      = false;
-      };
-
-      network = {
-        format-wifi         = "";
-        format-ethernet     = " {ipaddr}";
-        format-disconnected = "󰤭";
-        tooltip-format      = "{ifname}: {ipaddr}/{cidr}\n{gwaddr} — {bandwidthUpBytes} up {bandwidthDownBytes} down";
-        on-click            = "nm-connection-editor";
-      };
-
-      pulseaudio = {
-        format         = "{icon} {volume}%";
-        format-muted   = "󰝟 muted";
-        format-icons   = { default = [ "󰕿" "󰖀" "󰕾" ]; };
-        on-click       = "pwvucontrol";
-        tooltip-format = "{desc} — {volume}%";
-      };
-
-      "custom/bluetooth" = {
-        exec = builtins.toString (pkgs.writeShellScript "waybar-bluetooth" ''
-          device=$(bluetoothctl info 2>/dev/null | grep "Name:" | head -1 | sed 's/.*Name: //')
-          if [ -n "$device" ]; then
-            echo "󰂯 $device"
-          else
-            echo "󰂲"
-          fi
-        '');
-        interval   = 5;
-        on-click   = "blueman-manager";
-        tooltip    = false;
-      };
-
-      "custom/power" = {
-        format   = "󰐥";
-        on-click = "wlogout";
-        tooltip  = false;
-      };
-
-      tray = { spacing = 8; };
-    }];
-
-    style = ''
-      * {
-        font-family: "JetBrainsMono Nerd Font", monospace;
-        font-size: 13px;
-        min-height: 0;
-        border: none;
-        border-radius: 0;
-      }
-
-      window#waybar {
-        background: transparent;
-        color: @text;
-      }
-
-      .modules-left,
-      .modules-center,
-      .modules-right {
-        background: @surface0;
-        border-radius: 12px;
-        padding: 0 6px;
-        margin: 0 4px;
-      }
-
-      #workspaces { padding: 0 2px; }
-
-      #workspaces button {
-        padding: 4px 10px;
-        color: @subtext1;
-        background: transparent;
-        border-radius: 8px;
-        transition: all 0.15s ease;
-      }
-
-      #workspaces button:hover {
-        background: @surface1;
-        color: @text;
-      }
-
-      #workspaces button.active {
-        background: @mauve;
-        color: @base;
-        font-weight: bold;
-      }
-
-      #workspaces button.urgent {
-        background: @red;
-        color: @base;
-      }
-
-      #submap {
-        padding: 4px 10px;
-        color: @peach;
-        font-weight: bold;
-      }
-
-      #window {
-        padding: 4px 12px;
-        color: @subtext0;
-        font-style: italic;
-      }
-
-      #clock {
-        padding: 4px 14px;
-        color: @text;
-        font-weight: 600;
-      }
-
-      #battery,
-      #pulseaudio,
-      #network,
-      #backlight,
-      #idle-inhibitor,
-      #mpris,
-      #custom-bluetooth,
-      #tray,
-      #custom-power {
-        padding: 4px 10px;
-        transition: color 0.15s ease;
-      }
-
-      #mpris            { color: @mauve;    }
-      #idle-inhibitor   { color: @peach;    }
-      #backlight        { color: @yellow;   }
-      #battery          { color: @green;    }
-      #pulseaudio       { color: @sapphire; }
-      #network          { color: @teal;     }
-      #custom-bluetooth { color: @blue;     }
-
-      #battery:hover,
-      #pulseaudio:hover,
-      #network:hover,
-      #backlight:hover,
-      #idle-inhibitor:hover,
-      #custom-bluetooth:hover,
-      #mpris:hover {
-        color: @text;
-      }
-
-      #battery.charging { color: @green; }
-      #battery.plugged  { color: @teal;  }
-      #battery.warning:not(.charging)  { color: @yellow; }
-      #battery.critical:not(.charging) { color: @red; font-weight: bold; }
-
-      #idle-inhibitor.activated { color: @red; }
-
-      #custom-power {
-        color: @red;
-        padding: 4px 12px;
-        font-size: 15px;
-      }
-
-      #custom-power:hover {
-        color: @base;
-        background: @red;
-        border-radius: 0 12px 12px 0;
-      }
-
-      #tray { padding: 4px 8px; }
-      #tray > .passive        { -gtk-icon-effect: dim; }
-      #tray > .needs-attention { -gtk-icon-effect: highlight; }
-    '';
-  };
-
-  # ── Mako (notifications) ──────────────────────────────────────────────
-  home.file.".config/mako/config".source = ../config/mako/config;
-
-  # ── Wofi (launcher) ───────────────────────────────────────────────────
-  home.file.".config/wofi".source = ../config/wofi;
 }

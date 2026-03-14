@@ -1,6 +1,6 @@
 # NixOS Config — Decisions & Architecture Notes
 
-> Written by OpenCode (claude-sonnet-4.6) during configuration sessions on 2026-03-07, 2026-03-09, and 2026-03-10.
+> Written by OpenCode (claude-sonnet-4.6) during configuration sessions on 2026-03-07, 2026-03-09, 2026-03-10, and 2026-03-14.
 > Paste this file at the start of a new OpenCode session to restore context.
 
 ---
@@ -15,7 +15,7 @@
 | State version | `25.05` (do not change) |
 | User | `gl` (`/home/gl`) |
 | Shell | bash (login/PAM) → nushell (interactive) |
-| Desktop | Hyprland + Waybar + Wofi + Mako + Kitty |
+| Desktop | Hyprland + Waybar + Rofi + Swaync + Kitty |
 | Theme | Catppuccin Mocha (everywhere) |
 
 ---
@@ -50,6 +50,7 @@
 | `catppuccin` | `github:catppuccin/nix` | Unified theming module |
 
 `home-manager` and `catppuccin` both `follow` nixpkgs to avoid duplicate evaluations.
+`plasma-manager` was removed in the 2026-03-14 KDE → Hyprland migration (see Decision 21).
 
 ---
 
@@ -153,11 +154,11 @@ Or just log out and back in — the socket unit is wired to `sockets.target`.
 
 ---
 
-### 7. Display manager: greetd + tuigreet + uwsm
+### 7. Display manager: SDDM + uwsm
 
-**Decision:** `services.greetd` with `tuigreet` launching `uwsm start hyprland.desktop`.
+**Decision:** Keep `services.displayManager.sddm` (already configured, Wayland-enabled). Add `programs.uwsm.enable = true` to wrap Hyprland in a proper systemd user session.
 
-**Why tuigreet:** Minimal TUI greeter, no GTK dependency, reliable on bare Wayland setups.
+**Why SDDM (not greetd):** SDDM was already in place and works reliably. No reason to swap it for a minimal TUI greeter when the goal is just to add uwsm on top.
 
 **Why uwsm:** Properly wraps Hyprland in a systemd user session. Eliminates the "not designed to be launched by DM" journal warning. Handles XDG session activation, D-Bus scoping, and clean session teardown on logout.
 
@@ -343,10 +344,46 @@ Setting an explicit keyboard model suppresses these. No functional change.
 
 ---
 
+### 21. KDE Plasma 6 → Hyprland migration (2026-03-14)
+
+**Decision:** Migrate from KDE Plasma 6 + plasma-manager to Hyprland + the following stack:
+
+| Component | Choice | Replaces |
+|---|---|---|
+| Compositor | Hyprland (master layout) | KDE Plasma 6 + KWin |
+| Bar | Waybar (Hyprlust-inspired) | KDE top panel |
+| Launcher | rofi-wayland | wofi / KRunner |
+| Notifications | swaync | mako |
+| Wallpaper | hyprpaper | swww |
+| Screen lock | hyprlock + hypridle | DPMS only |
+| Tiling | Hyprland master layout | Polonium (KWin script) |
+
+**Why:** KDE Plasma 6 + Polonium provided auto-tiling but with significant overhead (plasmashell, baloo, akonadi, kded, etc.). Hyprland is purpose-built for tiling on Wayland with a fraction of the resource usage. plasma-manager, while functional, required maintaining a large `programs.plasma {}` block for things that Hyprland handles natively or via simpler dotfiles.
+
+**What was removed:**
+- `plasma-manager` flake input (`flake.nix`)
+- `plasma-manager.homeModules.plasma-manager` from nixbox home-manager imports
+- `services.desktopManager.plasma6.enable = true` (`configuration.nix`)
+- `programs.kdeconnect.enable = true` (`configuration.nix`)
+- `polonium` from `environment.systemPackages` (`configuration.nix`)
+- Entire `programs.plasma { ... }` block in `home/gui.nix` (~130 lines)
+- `catppuccin-kde` and `kdePackages.qtstyleplugin-kvantum` packages
+- `home.file.".config/Kvantum/..."` manual theme file
+- `config/mako/config` dotfile (replaced by swaync)
+- `config/wofi/` directory (replaced by rofi)
+
+**Waybar design:** Inspired by Hyprlust (github.com/NischalDawadi/Hyprlust). Uses the `[TOP] wallust_new` config layout with `[Catppuccin] Mocha.css` style as reference. Ported from wallust dynamic colors to static Catppuccin Mocha via `catppuccin.waybar.enable = true` (`@import mocha.css` prepended automatically). Layout: floating pill, 1200px wide, 5px top margin, 50px side margins. Left: menu icon + window title. Center: 4 persistent workspaces with app icons. Right: idle_inhibitor + hub group (clock, network, bluetooth, pulseaudio, tray) + power button.
+
+**Rofi config:** `programs.rofi` with `package = pkgs.rofi-wayland`. `catppuccin.rofi.enable = true` handles theming. `extraConfig` sets modi, display labels, hover-select behavior.
+
+**Build note:** First activation after this change MUST use `nixos-rebuild boot` (not `switch`) due to `programs.uwsm.enable = true` switching D-Bus implementation to `broker`.
+
+---
+
 ## Known Issues / Future Work
 
+- **Wallpaper:** `hyprpaper` is enabled but no wallpaper is set. Uncomment and fill in the `preload` and `wallpaper` lines in `programs.hyprpaper.settings` in `home/gui.nix`.
 - **`winbox` host (NVIDIA):** Stubbed in `flake.nix` and commented out. Needs `hosts/winbox/` directory with `configuration.nix` and `hardware-configuration.nix`. NVIDIA will require `hardware.nvidia.*` config and a different GPU VA-API setup.
-- **Wallpaper:** `swww-daemon` starts but no wallpaper is set. Uncomment and configure `exec-once = swww img ~/wallpapers/your-wallpaper.png` in `hyprland.conf`.
 - **`sops-nix`:** Not yet configured. For encrypting secrets within the Nix config repo (WiFi passwords, API keys, etc.), `sops-nix` is the standard approach. Add as a flake input when needed.
 - **`nix-doc` + `nixd` integration:** `nixd` can be pointed at your flake for full option completions. Add a `.neoconf.json` or `nixd` config in your nvim config pointing to `/etc/nixos/flake.nix`.
 - **Mason cosmetic issue:** `:Mason` shows Nix-provided LSP servers as "not installed." This is expected and harmless — do not use `:MasonInstall` for them.
