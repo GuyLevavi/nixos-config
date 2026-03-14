@@ -64,61 +64,54 @@
     };
   };
 
-  # ── Waybar (Hyprlust-inspired) ─────────────────────────────────────────
-  # catppuccin.waybar.enable prepends @import "mocha.css" so @base, @mauve,
-  # @text, etc. are available in the style string below.
+  # ── Waybar ────────────────────────────────────────────────────────────
+  # Three floating pills: left / center / right.
+  # catppuccin.waybar.enable prepends @import "mocha.css" — all @base,
+  # @mauve, @text, etc. Catppuccin variables are available in the style.
+  # Color-per-module scheme and workspace icons from Hyprlust.
   programs.waybar = {
     enable = true;
     settings = [{
       layer        = "top";
       position     = "top";
-      height       = 34;
-      width        = 1200;
-      margin-top   = 5;
-      margin-left  = 50;
-      margin-right = 50;
+      height       = 36;
+      spacing      = 4;
+      margin-top   = 6;
       fixed-center = true;
 
-      modules-left   = [ "custom/menu" "custom/separator#blank" "hyprland/window" ];
+      modules-left   = [ "custom/menu" "hyprland/window" ];
       modules-center = [ "hyprland/workspaces" ];
-      modules-right  = [ "idle_inhibitor" "group/hub" "custom/power" ];
+      modules-right  = [ "clock" "network" "pulseaudio" "tray" "custom/power" ];
 
-      # ── Left modules ────────────────────────────────────────────────
+      # ── Left ────────────────────────────────────────────────────────
       "custom/menu" = {
         format   = "󱓟";
-        tooltip  = true;
-        exec     = "echo ; echo  app launcher";
-        interval = 86400;
-        on-click = "pkill rofi || rofi -show drun -modi run,drun,filebrowser,window";
-      };
-
-      "custom/separator#blank" = {
-        format   = "";
-        interval = "once";
         tooltip  = false;
+        on-click = "pkill rofi || rofi -show drun";
       };
 
       "hyprland/window" = {
-        format      = "󰣆 {title}";
-        max-length  = 40;
+        format           = "  {title}";
+        max-length       = 50;
+        separate-outputs = true;
         rewrite = {
-          "(.*) — Mozilla Firefox"   = " Firefox";
-          "^.*v( .*|$)"             = " Neovim";
-          "^.*~$"                   = "󰄛 Kitty";
-          "(.*) "                   = " Empty";
+          "(.*) — Mozilla Firefox" = " Firefox";
+          "(.*) - Google Chrome"   = " Chrome";
+          "nvim (.*)"              = " Neovim";
+          "^$"                     = "  Desktop";
         };
       };
 
-      # ── Center modules ───────────────────────────────────────────────
+      # ── Center ──────────────────────────────────────────────────────
       "hyprland/workspaces" = {
-        format              = " {icon} ";
-        show-special        = false;
-        active-only         = false;
-        on-click            = "activate";
-        on-scroll-up        = "hyprctl dispatch workspace e+1";
-        on-scroll-down      = "hyprctl dispatch workspace e-1";
-        all-outputs         = true;
-        sort-by-number      = true;
+        format         = "{icon}";
+        show-special   = false;
+        active-only    = false;
+        on-click       = "activate";
+        on-scroll-up   = "hyprctl dispatch workspace e+1";
+        on-scroll-down = "hyprctl dispatch workspace e-1";
+        all-outputs    = true;
+        sort-by-number = true;
         persistent-workspaces = {
           "1" = [];
           "2" = [];
@@ -126,197 +119,154 @@
           "4" = [];
         };
         format-icons = {
-          "1"     = " ";
-          "2"     = " ";
-          "3"     = " ";
-          "4"     = " ";
+          "1"     = "󰎤";
+          "2"     = "󰎧";
+          "3"     = "󰎪";
+          "4"     = "󰎭";
           focused = "";
           default = "";
+          urgent  = "";
         };
       };
 
-      # ── Right modules ────────────────────────────────────────────────
-      "idle_inhibitor" = {
-        format       = "{icon}";
-        format-icons = {
-          activated   = " ";
-          deactivated = " ";
-        };
-      };
-
-      # group/hub: the right info pill — clock + network + bluetooth + audio + tray
-      "group/hub" = {
-        orientation = "inherit";
-        modules     = [ "clock" "network" "bluetooth" "pulseaudio" "tray" ];
-      };
-
+      # ── Right ───────────────────────────────────────────────────────
       "clock" = {
         interval       = 1;
-        format         = "{:%H:%M}";
-        format-alt     = " {:%H:%M   %Y-%m-%d, %A}";
+        format         = " {:%H:%M}";
+        format-alt     = " {:%a %d %b  %H:%M}";
         tooltip-format = "<tt><small>{calendar}</small></tt>";
         calendar = {
-          mode        = "year";
+          mode         = "year";
           mode-mon-col = 3;
-          on-scroll   = 1;
+          on-scroll    = 1;
           format = {
-            months   = "<span color='#cdd6f4'><b>{}</b></span>";
-            days     = "<span color='#cdd6f4'><b>{}</b></span>";
-            weekdays = "<span color='#f9e2af'><b>{}</b></span>";
-            today    = "<span color='#f38ba8'><b><u>{}</u></b></span>";
+            months   = "<span color='@text'><b>{}</b></span>";
+            days     = "<span color='@text'><b>{}</b></span>";
+            weekdays = "<span color='@yellow'><b>{}</b></span>";
+            today    = "<span color='@red'><b><u>{}</u></b></span>";
           };
         };
       };
 
       "network" = {
-        format-wifi       = "󰤨";
-        format-ethernet   = "󰈁";
-        format-disconnected = "󰖪";
-        format-linked     = "󰈁";
-        tooltip           = true;
-        tooltip-format-wifi = "{essid} ({signalStrength}%)";
-        tooltip-format-ethernet = "{ifname}";
-        tooltip-format-disconnected = "Disconnected";
-        on-click          = "nm-connection-editor";
-      };
-
-      "bluetooth" = {
-        format-on        = "";
-        format-off       = "󰂲";
-        format-disabled  = "";
-        format-connected = "";
-        tooltip          = true;
-        tooltip-format   = "{controller_alias}\n{num_connections} connected";
-        on-click         = "blueman-manager";
+        format-wifi         = "󰤨  {essid}";
+        format-ethernet     = "󰈁  {ifname}";
+        format-disconnected = "󰖪  Offline";
+        format-linked       = "󰈁  {ifname}";
+        max-length          = 20;
+        tooltip-format-wifi     = "{essid} ({signalStrength}%)\n{ipaddr}";
+        tooltip-format-ethernet = "{ifname}\n{ipaddr}";
+        on-click            = "nm-connection-editor";
       };
 
       "pulseaudio" = {
-        format         = "{icon} {volume}%";
-        format-muted   = "󰖁";
-        format-icons   = {
-          default = [ "󰕿" "󰖀" "󰕾" ];
-        };
-        scroll-step    = 5;
-        on-click       = "pwvucontrol";
-        tooltip-format = "{desc} | {volume}%";
+        format       = "{icon} {volume}%";
+        format-muted = "󰖁 Muted";
+        format-icons = { default = [ "󰕿" "󰖀" "󰕾" ]; };
+        scroll-step  = 5;
+        on-click     = "pwvucontrol";
+        tooltip-format = "{desc}\n{volume}%";
       };
 
       "tray" = {
         icon-size = 16;
-        spacing   = 4;
+        spacing   = 6;
       };
 
       "custom/power" = {
-        format   = "⏻";
-        tooltip  = true;
-        exec     = "echo ; echo 󰟡 power";
-        interval = 86400;
+        format   = "󰐥";
+        tooltip  = false;
         on-click = "wlogout";
       };
     }];
 
     style = ''
-      /* Catppuccin Mocha — colors provided via @import mocha.css from catppuccin.waybar */
+      /* Catppuccin Mocha palette injected via @import mocha.css (catppuccin.waybar) */
 
       * {
-        all:            unset;
-        font-family:    "JetBrainsMono Nerd Font";
-        font-weight:    bold;
-        font-size:      13px;
-        min-height:     0;
+        all:         unset;
+        font-family: "JetBrainsMono Nerd Font", monospace;
+        font-weight: bold;
+        font-size:   13px;
+        min-height:  0;
       }
 
       window#waybar {
-        background:  transparent;
-        border-radius: 12px;
+        background: transparent;
       }
 
       window#waybar.hidden {
         opacity: 0.2;
       }
 
-      /* ── Pills ───────────────────────────────────────────────────── */
+      /* ── Three floating pills ─────────────────────────────────────── */
       .modules-left,
       .modules-center,
       .modules-right {
-        background:    alpha(@base, 0.85);
-        border:        1px solid @overlay0;
-        border-radius: 12px;
-        padding:       2px 6px;
+        background:    alpha(@base, 0.92);
+        border-radius: 10px;
+        padding:       2px 8px;
+        margin-top:    4px;
       }
 
-      .modules-left,
-      .modules-right {
-        border-color: @blue;
-      }
-
-      /* ── Per-module padding ──────────────────────────────────────── */
+      /* ── Per-module padding ───────────────────────────────────────── */
       #clock,
       #network,
-      #bluetooth,
       #pulseaudio,
-      #idle_inhibitor,
       #tray,
       #window,
       #workspaces,
       #custom-menu,
       #custom-power {
-        padding: 3px 6px;
+        padding: 2px 8px;
+        color:   @text;
       }
 
-      /* ── Module accent colors (Hyprlust Catppuccin Mocha style) ──── */
-      #window          { color: @mauve;     }
-      #clock           { color: @yellow;    }
-      #network         { color: @teal;      }
-      #bluetooth       { color: @blue;      }
-      #pulseaudio      { color: @sapphire;  }
-      #pulseaudio.muted { color: @red;      }
-      #idle_inhibitor  { color: @blue;      }
-      #custom-menu     { color: @rosewater; }
-      #custom-power    { color: @red;       }
+      /* ── Module accent colors (Hyprlust Catppuccin Mocha scheme) ──── */
+      #window       { color: @mauve;     }
+      #clock        { color: @yellow;    }
+      #network      { color: @teal;      }
+      #pulseaudio   { color: @sapphire;  }
+      #custom-menu  { color: @rosewater; font-size: 16px; }
+      #custom-power { color: @red;       font-size: 15px; }
 
-      /* ── Workspaces ──────────────────────────────────────────────── */
+      #pulseaudio.muted { color: @overlay1; }
+
+      /* ── Workspaces ───────────────────────────────────────────────── */
       #workspaces button {
-        box-shadow:   none;
-        text-shadow:  none;
-        border-radius: 9px;
-        padding:      0 4px;
-        transition:   all 0.3s cubic-bezier(.55,-0.68,.48,1.682);
+        box-shadow:    none;
+        text-shadow:   none;
+        border-radius: 8px;
+        padding:       2px 6px;
+        color:         @surface2;
+        transition:    all 0.25s cubic-bezier(.55,-0.68,.48,1.682);
       }
 
       #workspaces button:hover {
-        background-color: @surface0;
-        color:            @overlay0;
-        border-radius:    10px;
-        padding:          0 2px;
+        background: alpha(@surface0, 0.6);
+        color:      @overlay1;
       }
 
       #workspaces button.active {
-        color:         @peach;
-        border-radius: 10px;
-        padding:       0 8px;
-        transition:    all 0.3s cubic-bezier(.55,-0.68,.48,1.682);
+        color:      @peach;
+        padding:    2px 10px;
+        transition: all 0.25s cubic-bezier(.55,-0.68,.48,1.682);
       }
 
       #workspaces button.urgent {
-        color:         @red;
-        border-radius: 0;
+        color: @red;
       }
 
-      #workspaces button.persistent {
-        color:         @surface1;
-        border-radius: 10px;
-      }
-
-      /* ── Power button: red fill on hover, right-cap border-radius ── */
+      /* ── Power button: red fill + right-cap radius on hover ───────── */
       #custom-power:hover {
         background:    @red;
         color:         @base;
-        border-radius: 0 12px 12px 0;
+        border-radius: 0 10px 10px 0;
+        padding-right: 12px;
       }
 
-      /* ── Tray ────────────────────────────────────────────────────── */
-      #tray > .passive       { -gtk-icon-effect: dim;       }
+      /* ── Tray ─────────────────────────────────────────────────────── */
+      #tray > .passive         { -gtk-icon-effect: dim;       }
       #tray > .needs-attention { -gtk-icon-effect: highlight; }
     '';
   };

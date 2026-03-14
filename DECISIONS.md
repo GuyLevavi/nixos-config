@@ -410,3 +410,45 @@ sudo nixos-rebuild switch --rollback
 # List generations
 sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
 ```
+
+---
+
+## Session — 2026-03-14 (Hyprland rice refinement)
+
+### Upstream API fixes caught by `nix flake check`
+- `programs.hyprpaper` does not exist in home-manager; corrected to `services.hyprpaper`.
+- `pkgs.rofi-wayland` was removed from nixpkgs (merged into `pkgs.rofi`); `package` updated to `pkgs.rofi`, redundant `home.packages` entry removed.
+
+### Decision 22 — Default layout: dwindle (binary tree)
+**Chosen:** `general { layout = dwindle }` with `dwindle { pseudotile = true; preserve_split = true }`.
+
+Rationale: user explicitly wanted "binary tree" splits. Dwindle is Hyprland's name for recursive binary tree tiling. Master layout is kept available in the config (can be activated at runtime with `hyprctl keyword general:layout master`) but is no longer the default.
+
+New keybinds added for dwindle:
+- `$mod, T` → `togglefloating`
+- `$mod, P` → `pseudo` (toggle pseudotile)
+- `$mod, J` → `layoutmsg, togglesplit` (toggle split direction)
+- `$mod, Tab` / `$mod SHIFT, Tab` → workspace cycle (wraps via `binds { allow_workspace_cycles = true }`)
+
+### Decision 23 — Waybar full rewrite
+**Previous state:** Broken — `group/hub` drawer had no CSS, `exec = "echo ..."` tooltip hack was fragile, hardcoded `width = 1200` + `margin-left/right = 50` caused overflow, hardcoded hex colors in calendar bypassed Catppuccin variables.
+
+**New design:**
+- Full-width bar (no `width`, no `margin-left/right`), `height = 36`, `margin-top = 6`
+- Module layout: `[menu | window] [workspaces] [clock | network | pulseaudio | tray | power]`
+- Dropped: `group/hub`, `idle_inhibitor`, `bluetooth`, `custom/separator#blank`
+- Three borderless floating pills (`.modules-left/center/right`): `background: alpha(@base, 0.92)`, `border-radius: 10px` — no border
+- Color-per-module from Hyprlust Catppuccin Mocha: `@mauve` (window), `@yellow` (clock), `@teal` (network), `@sapphire` (pulseaudio), `@rosewater` (menu), `@red` (power)
+- Workspace icons: `󰎤 󰎧 󰎪 󰎭` (Nerd Fonts boxed numerals) — persistent, no active-only
+- Power button: `󰐥` icon, red fill + right-cap border-radius on hover (from Hyprlust)
+- Removed all hardcoded hex colors; calendar format uses `@text`, `@yellow`, `@red` Catppuccin vars
+
+### Decision 24 — hyprland.conf overhaul
+Additions vs previous version:
+- Full `env = ...` block (was entirely missing): `XCURSOR_SIZE`, `QT_QPA_PLATFORM`, `GDK_BACKEND`, `MOZ_ENABLE_WAYLAND`, `XDG_*`, `SDL_VIDEODRIVER`, `_JAVA_AWT_WM_NONREPARENTING`, `OZONE_PLATFORM`
+- Animations upgraded to MD3 bezier curves (`md3_decel`, `md3_accel`, `menu_decel`, `menu_accel`) from ML4W/end-4; added `layersIn/Out` and `fadeLayersIn/Out` so rofi/swaync slide in correctly
+- `decoration`: `rounding 10`, `blur { xray = true; passes = 4 }`, `dim_inactive = true`, `shadow range = 20`
+- `binds { allow_workspace_cycles = true }`
+- `misc { focus_on_activate = true }`
+- Window rules section added: float common dialogs, float `blueman-manager`/`pwvucontrol`/`nm-connection-editor`/`keepassxc`, `noblur` for kitty, `immediate` for fullscreen
+- Removed dangerous `$mod SHIFT, M, exit` bind (wlogout on `$mod SHIFT, E` is the safe exit path)
