@@ -73,17 +73,15 @@
       alias lt     = eza --tree --icons
       alias cat    = bat
     '';
-    # extraConfig is appended after configFile.text in the merged output,
-    # and zoxide's enableNushellIntegration also uses extraConfig (mkDefault
-    # priority). lib.mkAfter ensures our def comes after the zoxide source
-    # so __zoxide_z is already defined when the def body is parsed.
+    # Expose z/zi after the zoxide source (which is injected into extraConfig
+    # by enableNushellIntegration). lib.mkAfter guarantees this lands last.
+    # Must use def --env --wrapped (not alias): __zoxide_z is def --env, and
+    # plain aliases do not propagate $env.PWD — the directory change is lost.
+    # We do NOT override 'cd': __zoxide_z calls the built-in cd internally,
+    # so any cd→__zoxide_z wrapper causes infinite recursion.
     extraConfig = lib.mkAfter ''
-      # 'cd' and 'z' both powered by zoxide. Must be after the zoxide source
-      # (lib.mkAfter ensures ordering vs zoxide's extraConfig injection).
-      # def --env shadows the built-in cd; aliases cannot do this.
-      def --env cd [...rest: string] { __zoxide_z ...$rest }
-      def --env z  [...rest: string] { __zoxide_z ...$rest }
-      def --env zi [...rest: string] { __zoxide_zi ...$rest }
+      def --env --wrapped z  [...rest: string] { __zoxide_z ...$rest }
+      def --env --wrapped zi [...rest: string] { __zoxide_zi ...$rest }
     '';
   };
 
@@ -141,9 +139,10 @@
   programs.zoxide = {
     enable                   = true;
     enableNushellIntegration = true;
-    # --no-cmd: only define __zoxide_z / __zoxide_zi internals, no aliases.
-    # We expose 'cd' and 'z' ourselves in extraConfig below via def --env,
-    # which (unlike aliases) can shadow nushell built-in commands.
+    # --no-cmd: emit __zoxide_z/__zoxide_zi internals + alias z/zi.
+    # Do NOT override 'cd': __zoxide_z internally calls the built-in cd,
+    # so any cd→__zoxide_z wrapper causes infinite recursion.
+    # Use 'z <query>' for frecency jumps; 'cd <path>' for plain navigation.
     options = [ "--no-cmd" ];
   };
 
