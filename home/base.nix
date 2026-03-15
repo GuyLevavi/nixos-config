@@ -72,7 +72,16 @@
       alias ll     = eza -la --icons --git
       alias lt     = eza --tree --icons
       alias cat    = bat
-      # 'cd' is overridden by zoxide via --cmd cd (see programs.zoxide below)
+    '';
+    # Expose z/zi after the zoxide source (which is injected into extraConfig
+    # by enableNushellIntegration). lib.mkAfter guarantees this lands last.
+    # Must use def --env --wrapped (not alias): __zoxide_z is def --env, and
+    # plain aliases do not propagate $env.PWD — the directory change is lost.
+    # We do NOT override 'cd': __zoxide_z calls the built-in cd internally,
+    # so any cd→__zoxide_z wrapper causes infinite recursion.
+    extraConfig = lib.mkAfter ''
+      def --env --wrapped z  [...rest: string] { __zoxide_z ...$rest }
+      def --env --wrapped zi [...rest: string] { __zoxide_zi ...$rest }
     '';
   };
 
@@ -130,7 +139,11 @@
   programs.zoxide = {
     enable                   = true;
     enableNushellIntegration = true;
-    options                  = [ "--cmd cd" ];
+    # --no-cmd: emit __zoxide_z/__zoxide_zi internals + alias z/zi.
+    # Do NOT override 'cd': __zoxide_z internally calls the built-in cd,
+    # so any cd→__zoxide_z wrapper causes infinite recursion.
+    # Use 'z <query>' for frecency jumps; 'cd <path>' for plain navigation.
+    options = [ "--no-cmd" ];
   };
 
   programs.fzf.enable = true;

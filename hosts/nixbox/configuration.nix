@@ -33,52 +33,38 @@
     LIBVA_DRIVER_NAME = "iHD";
   };
 
-  # ── Hyprland ──────────────────────────────────────────────────────────
-  programs.hyprland = {
+  # ── Display manager: SDDM (Wayland) ──────────────────────────────────
+  services.displayManager.sddm = {
     enable = true;
-    xwayland.enable = true;
+    wayland.enable = true;
   };
 
-  # uwsm — Universal Wayland Session Manager.
-  # Wraps Hyprland in a proper systemd user session so greetd can launch
-  # it without triggering the "not designed to be launched by a DM" warning.
-  # Hyprland ships a hyprland-uwsm.desktop for exactly this purpose.
+  # ── Desktop: Hyprland ────────────────────────────────────────────────
+  # Registers hyprland.desktop session entry so SDDM can offer it.
+  programs.hyprland.enable = true;
+
+  # uwsm wraps Hyprland in a proper systemd user session (XDG activation,
+  # D-Bus scoping, clean teardown). Side-effect: switches dbus.implementation
+  # to "broker" — first activation MUST use nixos-rebuild boot, not switch.
   programs.uwsm = {
     enable = true;
     waylandCompositors.hyprland = {
       prettyName = "Hyprland";
-      comment     = "Hyprland via uwsm";
+      comment     = "Hyprland compositor managed by uwsm";
       binPath     = "/run/current-system/sw/bin/Hyprland";
     };
   };
 
-  # ── Display manager: greetd + tuigreet ───────────────────────────────
-  # tuigreet hands off to uwsm, which starts Hyprland inside a clean
-  # systemd user session — no DM-launch warning, password on boot.
-  services.greetd = {
+  # ── Chrome: Catppuccin Mocha theme via system policy ─────────────────
+  # programs.chromium writes to /etc/opt/chrome/policies/managed/ which
+  # Google Chrome reads on startup. ExtensionInstallForcelist requires
+  # "id;update_url" format — bare IDs are silently ignored by Chrome.
+  programs.chromium = {
     enable = true;
-    settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --cmd 'uwsm start hyprland-uwsm.desktop'";
-        user = "greeter";
-      };
-    };
-  };
-  # Silence TTY output noise on greetd startup
-  systemd.services.greetd.serviceConfig = {
-    Type             = "idle";
-    StandardInput    = "tty";
-    StandardOutput   = "tty";
-    StandardError    = "journal";
-    TTYReset         = true;
-    TTYVHangup       = true;
-    TTYVTDisallocate = true;
-  };
-
-  # ── XDG portal (screen sharing, file pickers) ─────────────────────────
-  xdg.portal = {
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
+    extensions = [
+      # Catppuccin Mocha Chrome theme (Chrome Web Store)
+      "bkkmolkhemgaeaeggcmfbghljjjoofoh;https://clients2.google.com/service/update2/crx"
+    ];
   };
 
   # ── Audio: pipewire ───────────────────────────────────────────────────
@@ -92,13 +78,13 @@
   security.rtkit.enable = true;
 
   # ── Bluetooth ─────────────────────────────────────────────────────────
-  # blueman provides a tray applet + GUI manager (blueman-applet).
-  # hardware.bluetooth.powerOnBoot keeps the adapter on across reboots.
+  # bluetui (home.packages in gui.nix) is the TUI manager via BlueZ D-Bus.
+  # blueman disabled — bluetui replaces it; no tray applet needed.
   hardware.bluetooth = {
     enable        = true;
     powerOnBoot   = true;
   };
-  services.blueman.enable = true;   # DBus service + blueman-applet
+  services.blueman.enable = false;  # replaced by bluetui TUI
 
   # ── Polkit (Hyprland privilege escalation) ────────────────────────────
   security.polkit.enable = true;
@@ -133,8 +119,7 @@
     pciutils   # lspci — GPU diagnostics
     usbutils
     claude-code
-    gh         # GitHub CLI
-    glab       # GitLab CLI
+    gh
   ];
 
   # ── Fonts ─────────────────────────────────────────────────────────────
