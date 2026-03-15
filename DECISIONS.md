@@ -112,15 +112,23 @@
 
 ---
 
-### 4. Zoxide with `--cmd cd`
+### 4. Zoxide: `--no-cmd` + `def --env --wrapped z` (final approach)
 
-**Decision:** `programs.zoxide.options = [ "--cmd cd" ]`
+**Decision:** `programs.zoxide.options = [ "--no-cmd" ]` plus in `lib.mkAfter extraConfig`:
+```nix
+def --env --wrapped z  [...rest: string] { __zoxide_z ...$rest }
+def --env --wrapped zi [...rest: string] { __zoxide_zi ...$rest }
+```
 
-**Why:** Without this, zoxide provides `z` and `zi` as custom commands. The old config had `alias cd = z` in env.nu (wrong file, wrong approach). With `--cmd cd`, zoxide's nushell integration directly overrides the built-in `cd` command with a zoxide-powered version. This means:
-- `cd foo` uses frecency-based directory jumping
-- No manual alias needed
-- `cd` is always defined (comes from zoxide init, not a fragile alias)
-- `zi` is still available for interactive fuzzy selection
+**Why `--no-cmd`:** Without it, zoxide's nushell integration generates `alias cd = __zoxide_z`. Nushell aliases cannot shadow built-in commands — the alias is silently ignored, leaving `cd` as the plain built-in.
+
+**Why `def --env --wrapped` (not `alias`):** `__zoxide_z` is declared as `def --env --wrapped` in the zoxide source. It changes `$env.PWD`. A plain `alias z = __zoxide_z` wraps it in a regular (non-env) call context — `$env.PWD` changes inside the call but the change is not propagated back to the parent scope. The directory appears to change but the shell's working directory is unaffected. `def --env --wrapped` is required to forward the env mutation.
+
+**Why not override `cd`:** `__zoxide_z` internally calls the built-in `cd` to perform the actual directory change. Defining `def --env cd [...] { __zoxide_z ...$rest }` creates a cycle: `cd → __zoxide_z → cd → __zoxide_z → ...` until nushell hits its recursion limit (50). There is no `builtin::cd` escape hatch in nushell.
+
+**Result:** `cd <path>` = plain built-in navigation. `z <query>` = frecency jump via zoxide. `zi` = interactive fuzzy picker.
+
+**See Decision 31 for the full history of failed approaches.**
 
 ---
 
@@ -377,6 +385,34 @@ Setting an explicit keyboard model suppresses these. No functional change.
 **Rofi config:** `programs.rofi` with `package = pkgs.rofi-wayland`. `catppuccin.rofi.enable = true` handles theming. `extraConfig` sets modi, display labels, hover-select behavior.
 
 **Build note:** First activation after this change MUST use `nixos-rebuild boot` (not `switch`) due to `programs.uwsm.enable = true` switching D-Bus implementation to `broker`.
+
+---
+
+### Decision 31 — Zoxide + Nushell: complete history of failed approaches (2026-03-15)
+
+Every approach tried before the working solution in Decision 4. Documented so future agents don't repeat them.
+
+**Attempt 1 — `--cmd cd` (original config)**
+`programs.zoxide.options = [ "--cmd cd" ]`. Zoxide generates `alias cd = __zoxide_z`. Nushell aliases cannot shadow built-in commands — silently a no-op. `cd` remained the plain built-in. Zoxide never ran.
+
+**Attempt 2 — `def --env cd` in `configFile.text`**
+Added `def --env cd [...rest: string] { __zoxide_z ...$rest }` to `configFile.text`. `configFile.text` is emitted *before* `extraConfig` in the merged `config.nu`. Zoxide's `enableNushellIntegration` injects its `source` line via `extraConfig` (at `mkDefault` priority). So `__zoxide_z` was not yet defined when the `def` was parsed — nushell error: "Command `__zoxide_z` not found".
+
+**Attempt 3 — `def --env cd` in `lib.mkAfter extraConfig`**
+Moved the def to `lib.mkAfter extraConfig` to guarantee it comes after the zoxide source. Ordering was now correct. But `__zoxide_z` internally calls the built-in `cd` to do the actual chdir. Defining `cd → __zoxide_z → cd → ...` causes infinite recursion — nushell hits its recursion limit (50) on every directory change. There is no `builtin::cd` escape hatch.
+
+**Attempt 4 — `alias z = __zoxide_z` in `lib.mkAfter extraConfig`**
+Switched to `--no-cmd` (suppress zoxide's own alias generation) and added `alias z = __zoxide_z` via `lib.mkAfter`. Built and activated successfully. `cd` worked (zoxide hook fires on PWD change). But `z <query>` appeared to do nothing — the terminal stayed in the same directory. Root cause: `__zoxide_z` is `def --env --wrapped`, which mutates `$env.PWD`. A plain `alias` wraps the call in a non-env context — the mutation is not propagated back to the parent scope.
+
+**Working solution (Attempt 5) — `def --env --wrapped z` in `lib.mkAfter extraConfig`**
+```nix
+extraConfig = lib.mkAfter ''
+  def --env --wrapped z  [...rest: string] { __zoxide_z ...$rest }
+  def --env --wrapped zi [...rest: string] { __zoxide_zi ...$rest }
+'';
+programs.zoxide.options = [ "--no-cmd" ];
+```
+`def --env --wrapped` correctly forwards the `$env.PWD` mutation from `__zoxide_z` back to the calling scope. `z <query>` now changes directory. `cd` stays as the plain built-in (no recursion). Both commands coexist.
 
 ---
 
