@@ -72,10 +72,15 @@
       alias ll     = eza -la --icons --git
       alias lt     = eza --tree --icons
       alias cat    = bat
-
-      # Override built-in cd with zoxide. Aliases cannot shadow nushell built-ins,
-      # but 'def --env' can. __zoxide_z is defined by the zoxide nushell integration
-      # (sourced below via programs.zoxide.enableNushellIntegration).
+    '';
+    # extraConfig is appended after configFile.text in the merged output,
+    # and zoxide's enableNushellIntegration also uses extraConfig (mkDefault
+    # priority). lib.mkAfter ensures our def comes after the zoxide source
+    # so __zoxide_z is already defined when the def body is parsed.
+    extraConfig = lib.mkAfter ''
+      # Override built-in cd with zoxide. Must be after the zoxide source
+      # (which defines __zoxide_z) — hence lib.mkAfter on extraConfig.
+      # Aliases cannot shadow nushell built-ins; def --env can.
       def --env cd [...rest: string] { __zoxide_z ...$rest }
     '';
   };
