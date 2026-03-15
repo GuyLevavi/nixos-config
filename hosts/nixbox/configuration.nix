@@ -57,13 +57,13 @@
 
   # ── Chrome: Catppuccin Mocha theme via system policy ─────────────────
   # programs.chromium writes to /etc/opt/chrome/policies/managed/ which
-  # Google Chrome reads on startup (unlike home-manager extensions which
-  # only work with open-source Chromium). The Mocha theme ID is the stable
-  # Chrome Web Store ID for catppuccin/chrome.
+  # Google Chrome reads on startup. ExtensionInstallForcelist requires
+  # "id;update_url" format — bare IDs are silently ignored by Chrome.
   programs.chromium = {
     enable = true;
     extensions = [
-      "bkkmolkhemgaeaeggcmfbghljjjoofoh" # Catppuccin Mocha Chrome theme
+      # Catppuccin Mocha Chrome theme (Chrome Web Store)
+      "bkkmolkhemgaeaeggcmfbghljjjoofoh;https://clients2.google.com/service/update2/crx"
     ];
   };
 

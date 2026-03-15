@@ -72,7 +72,11 @@
       alias ll     = eza -la --icons --git
       alias lt     = eza --tree --icons
       alias cat    = bat
-      # 'cd' is overridden by zoxide via --cmd cd (see programs.zoxide below)
+
+      # Override built-in cd with zoxide. Aliases cannot shadow nushell built-ins,
+      # but 'def --env' can. __zoxide_z is defined by the zoxide nushell integration
+      # (sourced below via programs.zoxide.enableNushellIntegration).
+      def --env cd [...rest: string] { __zoxide_z ...$rest }
     '';
   };
 
@@ -130,7 +134,9 @@
   programs.zoxide = {
     enable                   = true;
     enableNushellIntegration = true;
-    options                  = [ "--cmd cd" ];
+    # Do NOT use --cmd cd: zoxide generates 'alias cd = __zoxide_z' which
+    # silently fails in nushell because aliases cannot shadow built-in commands.
+    # Instead we define 'def --env cd' manually in configFile.text above.
   };
 
   programs.fzf.enable = true;

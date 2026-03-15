@@ -199,7 +199,7 @@
         all:         unset;
         font-family: "JetBrainsMono Nerd Font", monospace;
         font-weight: bold;
-        font-size:   13px;
+        font-size:   14px;
         min-height:  0;
       }
 
