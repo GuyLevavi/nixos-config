@@ -215,11 +215,14 @@
       .modules-left,
       .modules-center,
       .modules-right {
-        background:    alpha(@base, 0.92);
+        background:    alpha(@base, 0.70);
         border-radius: 10px;
         padding:       2px 8px;
         margin-top:    4px;
       }
+
+      .modules-left  { margin-left:  8px; }
+      .modules-right { margin-right: 8px; }
 
       /* ── Per-module padding ───────────────────────────────────────── */
       #clock,
