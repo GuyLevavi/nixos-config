@@ -55,6 +55,18 @@
     };
   };
 
+  # ── Chrome: Catppuccin Mocha theme via system policy ─────────────────
+  # programs.chromium writes to /etc/opt/chrome/policies/managed/ which
+  # Google Chrome reads on startup (unlike home-manager extensions which
+  # only work with open-source Chromium). The Mocha theme ID is the stable
+  # Chrome Web Store ID for catppuccin/chrome.
+  programs.chromium = {
+    enable = true;
+    extensions = [
+      "bkkmolkhemgaeaeggcmfbghljjjoofoh" # Catppuccin Mocha Chrome theme
+    ];
+  };
+
   # ── Audio: pipewire ───────────────────────────────────────────────────
   services.pipewire = {
     enable            = true;
@@ -66,13 +78,13 @@
   security.rtkit.enable = true;
 
   # ── Bluetooth ─────────────────────────────────────────────────────────
-  # blueman provides a tray applet + GUI manager (blueman-applet).
-  # hardware.bluetooth.powerOnBoot keeps the adapter on across reboots.
+  # bluetui (home.packages in gui.nix) is the TUI manager via BlueZ D-Bus.
+  # blueman disabled — bluetui replaces it; no tray applet needed.
   hardware.bluetooth = {
     enable        = true;
     powerOnBoot   = true;
   };
-  services.blueman.enable = true;   # DBus service + blueman-applet
+  services.blueman.enable = false;  # replaced by bluetui TUI
 
   # ── Polkit (Hyprland privilege escalation) ────────────────────────────
   security.polkit.enable = true;

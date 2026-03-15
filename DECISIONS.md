@@ -257,7 +257,7 @@ Mirrors the manual `gcold` alias. Runs weekly via systemd timer. Keeps last 14 d
 - `--ozone-platform=wayland` — native Wayland rendering
 - `--enable-wayland-ime` — input method support on Wayland
 
-**Catppuccin theme:** Must be installed manually from the Chrome Web Store. Browser extensions cannot be declaratively managed for Chrome.
+**Catppuccin theme:** Declared via `programs.chromium.extensions` in `configuration.nix` (NixOS system policy). Writes to `/etc/opt/chrome/policies/managed/` which Chrome reads. See Decision 30 for details.
 
 ---
 
@@ -487,3 +487,57 @@ Both `blur` and `ignorezero` rules for rofi updated to the no-comma form.
 **Hebrew keyboard layout:** Added `kb_layout = us,il`, `kb_variant = ,` (empty variant = standard Hebrew), and `kb_options = grp:alt_shift_toggle` to the `input {}` block. Alt+Shift switches between US and Hebrew. No extra keybind needed — handled entirely by xkb at the compositor level.
 
 **Dwindle force_split:** Added `force_split = 2` to the `dwindle {}` block. With the default (`0`), new windows open on the side of the current window that the mouse cursor is on. `force_split = 2` always opens new windows to the right (horizontal split) or below (vertical split), regardless of cursor position — predictable behavior for keyboard-driven workflows.
+
+### Decision 27 — hypridle: display-off only, no auto-lock (2026-03-15)
+
+**Change:** Removed `lock_cmd`, `before_sleep_cmd`, and the 5-minute lock listener from `services.hypridle`. Only one listener remains: display off at 10 minutes idle, display on on resume.
+
+**Why:** Auto-lock on idle is disruptive for long-running tasks (builds, videos, reading). The only lock path is now manual: `Super+Shift+L` → `hyprlock`. This is the intended behavior — the user wants explicit control over locking.
+
+**hyprland.conf bind:** `Super+Shift+L` → `hyprlock` (unchanged; `Super+L` is reserved for `movefocus right`).
+
+---
+
+### Decision 28 — Qt theming: given up (2026-03-15)
+
+**Attempted:** `qt { enable = true; platformTheme.name = "qtct"; style.name = "kvantum"; }` + upstream `catppuccin/kvantum` theme files via `fetchFromGitHub` + `xdg.configFile."Kvantum/..."`.
+
+**Why it failed (three separate reasons):**
+1. `home.sessionVariables` / `systemd.user.sessionVariables` only take effect after a full **logout/login**, not after `nixos-rebuild switch`. The running Hyprland session's environment is not updated by activation alone — so `QT_QPA_PLATFORMTHEME` and `QT_STYLE_OVERRIDE` were never set in the current session.
+2. **KeePassXC** (Qt5) ignores external Qt style engines — it has a built-in dark/light mode toggle that takes precedence over `QT_STYLE_OVERRIDE=kvantum`.
+3. **pwvucontrol** is a **GTK4/libadwaita** app, not Qt. Its white appearance is unrelated to Qt theming; it would require `dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark"` to go dark, which the user chose not to add.
+
+**What was removed:** The `let catppuccin-kvantum-src = pkgs.fetchFromGitHub { ... }; in` wrapper, the entire `qt { ... }` block, and both `xdg.configFile."Kvantum/..."` entries.
+
+**Status:** No Qt theming. KeePassXC uses its built-in dark mode. pwvucontrol stays white.
+
+---
+
+### Decision 29 — Stale wallpaper scripts deleted (2026-03-15)
+
+**Deleted:**
+- `config/scripts/wallpaper-select.sh`
+- `config/scripts/wallpaper-init.sh`
+- `config/rofi/wallpaper.rasi`
+
+**Why:** These were the `pkgs.writeShellScriptBin`-style scripts from Decision 25. After the wallpaper selector was removed (it was never actually working — `~/Pictures/wallpapers/` doesn't exist and waypaper replaced the need for a custom rofi picker), these files became dead weight. waypaper provides a GUI wallpaper picker via `hyprpaper` backend and is in `home.packages`.
+
+---
+
+### Decision 30 — Chrome Catppuccin theme via NixOS system policy (2026-03-15)
+
+**Problem:** `programs.google-chrome.extensions` was removed from home-manager (issue nix-community/home-manager#1383) because Google Chrome reads external extensions from `/opt/google/chrome/extensions/` — a system path that home-manager cannot write. The `catppuccin/nix` `chrome.nix` module explicitly excludes `google-chrome` for the same reason.
+
+**Solution attempted:** NixOS system-level `programs.chromium.extensions` in `configuration.nix`. This module writes a policy JSON to `/etc/opt/chrome/policies/managed/` — a path that Google Chrome *does* read at startup (unlike the home-manager extension mechanism). The Catppuccin Mocha Chrome Web Store extension ID is `bkkmolkhemgaeaeggcmfbghljjjoofoh`.
+
+**Configuration:**
+```nix
+programs.chromium = {
+  enable = true;
+  extensions = [ "bkkmolkhemgaeaeggcmfbghljjjoofoh" ];
+};
+```
+
+**Status:** Policy file is generated at `/etc/opt/chrome/policies/managed/default.json`. Whether Chrome auto-installs the theme on next launch is to be verified. If it does not work, fall back to manual install from the Chrome Web Store.
+
+**Catppuccin Mocha Chrome theme:** Themes the tab bar, toolbar, window frame, and NTP in Mocha colors. Extension IDs for other flavors: Latte `jhjnalhegpceacdhbplhnakmkdliaddd`, Frappe `olhelnoplefjdmncknfphenjclimckaf`, Macchiato `cmpdlhmnmjhihmcfnigoememnffkimlk`.

@@ -27,13 +27,10 @@
   };
 
   # ── Hyprpaper ─────────────────────────────────────────────────────────
-  # Wallpaper daemon. Preload and wallpaper lines are commented out — drop in
-  # your wallpaper path and uncomment when ready.
+  # Wallpaper daemon. waypaper manages preload/wallpaper via IPC.
   services.hyprpaper = {
     enable   = true;
     settings = {
-      # preload  = [ "/home/gl/wallpapers/your-wallpaper.png" ];
-      # wallpaper = [ ", /home/gl/wallpapers/your-wallpaper.png" ];
       splash = false;
     };
   };
@@ -42,21 +39,17 @@
   programs.hyprlock.enable = true;
 
   # ── Hypridle ──────────────────────────────────────────────────────────
+  # Only manages display power — does NOT lock. Lock is manual: Super+Shift+L.
+  # before_sleep_cmd and lock_cmd removed intentionally; no auto-lock on idle.
   services.hypridle = {
     enable = true;
     settings = {
       general = {
-        before_sleep_cmd = "hyprlock";
-        after_sleep_cmd  = "hyprctl dispatch dpms on";
-        lock_cmd         = "hyprlock";
+        after_sleep_cmd = "hyprctl dispatch dpms on";
       };
       listener = [
         {
-          timeout    = 300; # 5 min
-          on-timeout = "hyprlock";
-        }
-        {
-          timeout    = 600; # 10 min
+          timeout    = 600; # 10 min → display off
           on-timeout = "hyprctl dispatch dpms off";
           on-resume  = "hyprctl dispatch dpms on";
         }
@@ -81,7 +74,7 @@
 
       modules-left   = [ "custom/menu" "hyprland/window" ];
       modules-center = [ "hyprland/workspaces" ];
-      modules-right  = [ "clock" "network" "pulseaudio" "tray" "custom/power" ];
+      modules-right  = [ "clock" "battery" "network" "bluetooth" "pulseaudio" "tray" "custom/power" ];
 
       # ── Left ────────────────────────────────────────────────────────
       "custom/menu" = {
@@ -156,7 +149,26 @@
         max-length          = 20;
         tooltip-format-wifi     = "{essid} ({signalStrength}%)\n{ipaddr}";
         tooltip-format-ethernet = "{ifname}\n{ipaddr}";
-        on-click            = "nm-connection-editor";
+        on-click            = "kitty --title nmtui nmtui";
+      };
+
+      "battery" = {
+        states = { warning = 30; critical = 15; };
+        format          = "{icon} {capacity}%";
+        format-charging = "󰂄 {capacity}%";
+        format-plugged  = "󰚥 {capacity}%";
+        format-icons    = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+        tooltip-format  = "{timeTo}\n{power}W";
+      };
+
+      "bluetooth" = {
+        format          = "󰂯 {status}";
+        format-connected = "󰂱 {device_alias}";
+        format-connected-battery = "󰂱 {device_alias} {device_battery_percentage}%";
+        tooltip-format  = "{controller_alias}\n{num_connections} connected";
+        tooltip-format-connected = "{controller_alias}\n{num_connections} connected\n\n{device_enumerate}";
+        tooltip-format-enumerate-connected = "{device_alias}";
+        on-click        = "kitty --title bluetui bluetui";
       };
 
       "pulseaudio" = {
@@ -212,6 +224,8 @@
       /* ── Per-module padding ───────────────────────────────────────── */
       #clock,
       #network,
+      #battery,
+      #bluetooth,
       #pulseaudio,
       #tray,
       #window,
@@ -225,12 +239,35 @@
       /* ── Module accent colors (Hyprlust Catppuccin Mocha scheme) ──── */
       #window       { color: @mauve;     }
       #clock        { color: @yellow;    }
+      #battery      { color: @green;     }
       #network      { color: @teal;      }
+      #bluetooth    { color: @blue;      }
       #pulseaudio   { color: @sapphire;  }
       #custom-menu  { color: @rosewater; font-size: 16px; }
       #custom-power { color: @red;       font-size: 15px; }
 
-      #pulseaudio.muted { color: @overlay1; }
+      #pulseaudio.muted       { color: @overlay1; }
+      #battery.warning        { color: @yellow;   }
+      #battery.critical       { color: @red;       animation-name: blink; animation-duration: 1s; animation-timing-function: steps(1, end); animation-iteration-count: infinite; }
+      #bluetooth.disabled     { color: @overlay1; }
+
+      /* ── Tooltips ─────────────────────────────────────────────────── */
+      tooltip {
+        background:    alpha(@base, 0.95);
+        border:        1px solid @surface1;
+        border-radius: 8px;
+        padding:       6px 10px;
+        color:         @text;
+      }
+
+      tooltip label {
+        color: @text;
+      }
+
+      /* ── Battery blink animation (critical) ──────────────────────── */
+      @keyframes blink {
+        to { color: @overlay1; }
+      }
 
       /* ── Workspaces ───────────────────────────────────────────────── */
       #workspaces button {
@@ -345,15 +382,9 @@
     x11.enable = true;
   };
 
-  # ── Wallpaper selector scripts ────────────────────────────────────────
-  # Wrapped as Nix derivations so they land on $PATH and are executable.
-  # wallpaper-select: rofi thumbnail picker → hyprpaper IPC
-  # wallpaper-init:   restores last wallpaper on session start (exec-once)
+  # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
-    (pkgs.writeShellScriptBin "wallpaper-select"
-      (builtins.readFile ../config/scripts/wallpaper-select.sh))
-    (pkgs.writeShellScriptBin "wallpaper-init"
-      (builtins.readFile ../config/scripts/wallpaper-init.sh))
+    waypaper        # GUI wallpaper picker (hyprpaper backend)
 
     # Credentials (GUI — KeePassXC requires a running display)
     keepassxc
@@ -373,12 +404,6 @@
     grim            # screenshot (region capture)
     slurp           # region selector (used with grim)
     playerctl       # MPRIS media player control
-    networkmanagerapplet  # nm-applet tray icon
-    blueman         # bluetooth manager (blueman-manager on-click)
+    bluetui         # bluetooth TUI manager (replaces blueman)
   ];
-
-  # ── Rofi wallpaper picker theme ───────────────────────────────────────
-  # Installed separately from catppuccin.rofi so it can override geometry
-  # and transparency for the wallpaper grid without touching the app launcher.
-  xdg.configFile."rofi/wallpaper.rasi".source = ../config/rofi/wallpaper.rasi;
 }
