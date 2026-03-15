@@ -78,10 +78,12 @@
     # priority). lib.mkAfter ensures our def comes after the zoxide source
     # so __zoxide_z is already defined when the def body is parsed.
     extraConfig = lib.mkAfter ''
-      # Override built-in cd with zoxide. Must be after the zoxide source
-      # (which defines __zoxide_z) — hence lib.mkAfter on extraConfig.
-      # Aliases cannot shadow nushell built-ins; def --env can.
+      # 'cd' and 'z' both powered by zoxide. Must be after the zoxide source
+      # (lib.mkAfter ensures ordering vs zoxide's extraConfig injection).
+      # def --env shadows the built-in cd; aliases cannot do this.
       def --env cd [...rest: string] { __zoxide_z ...$rest }
+      def --env z  [...rest: string] { __zoxide_z ...$rest }
+      def --env zi [...rest: string] { __zoxide_zi ...$rest }
     '';
   };
 
@@ -139,9 +141,10 @@
   programs.zoxide = {
     enable                   = true;
     enableNushellIntegration = true;
-    # Do NOT use --cmd cd: zoxide generates 'alias cd = __zoxide_z' which
-    # silently fails in nushell because aliases cannot shadow built-in commands.
-    # Instead we define 'def --env cd' manually in configFile.text above.
+    # --no-cmd: only define __zoxide_z / __zoxide_zi internals, no aliases.
+    # We expose 'cd' and 'z' ourselves in extraConfig below via def --env,
+    # which (unlike aliases) can shadow nushell built-in commands.
+    options = [ "--no-cmd" ];
   };
 
   programs.fzf.enable = true;
