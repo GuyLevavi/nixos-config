@@ -1,6 +1,6 @@
 # NixOS Config — Decisions & Architecture Notes
 
-> Written by OpenCode (claude-sonnet-4.6) during configuration sessions on 2026-03-07, 2026-03-09, 2026-03-10, and 2026-03-14.
+> Written by OpenCode (claude-sonnet-4.6) during configuration sessions on 2026-03-07, 2026-03-09, 2026-03-10, 2026-03-14, and 2026-03-15.
 > Paste this file at the start of a new OpenCode session to restore context.
 
 ---
