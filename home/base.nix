@@ -4,6 +4,7 @@
 { config, pkgs, lib, ... }:
 
 {
+  imports = [ ./nixvim.nix ];
   home.username    = "gl";
   home.homeDirectory = "/home/gl";
   home.stateVersion  = "25.05"; # DO NOT change after install
@@ -21,13 +22,18 @@
   catppuccin.bat.enable      = true;
   catppuccin.btop.enable     = true;
   catppuccin.nushell.enable  = true;
-  catppuccin.nvim.enable     = true;
+  catppuccin.nvim.enable     = false;  # NixVim uses its own catppuccin module
   catppuccin.opencode.enable = true;
-  catppuccin.delta.enable    = true; # git diff pager
+  catppuccin.delta.enable    = true;   # git diff pager
+  catppuccin.atuin.enable    = true;   # shell history search
 
   # ── Shell: Bash (login) → exec Nushell ────────────────────────────────
   programs.bash = {
     enable   = true;
+    shellAliases = {
+      vim = "nvim";
+      vi  = "nvim";
+    };
     initExtra = ''
       if [[ $- == *i* && -z "$BASH_EXECUTION_STRING" && -z "$IN_NIX_SHELL" ]]; then
         exec nu
@@ -41,11 +47,25 @@
       $env.EDITOR = "nvim"
       $env.VISUAL = "nvim"
       $env.DOCKER_HOST = $"unix://($env.XDG_RUNTIME_DIR)/podman/podman.sock"
+
+      # Vi mode indicators — starship does NOT support vi mode for nushell
+      # (starship#4897). Use nushell's native closures instead.
+      # Green ❯ (insert, success) / red ❯ (insert, error) / purple ❮ (normal)
+      $env.PROMPT_INDICATOR_VI_INSERT = {||
+        if ($env.LAST_EXIT_CODE? | default 0) == 0 {
+          $"(ansi green_bold)❯(ansi reset) "
+        } else {
+          $"(ansi red_bold)❯(ansi reset) "
+        }
+      }
+      $env.PROMPT_INDICATOR_VI_NORMAL = {|| $"(ansi purple_bold)❮(ansi reset) " }
     '';
     configFile.text = ''
       $env.config = {
         show_banner: false
         edit_mode: vi
+        use_kitty_protocol: true             # better key detection in vi mode
+        highlight_resolved_externals: true    # colors valid commands green as you type
         cursor_shape: {
           vi_insert: line
           vi_normal: block
@@ -54,12 +74,48 @@
           case_sensitive: false
           quick: true
           algorithm: fuzzy
+          external: {
+            enable: true      # allow external completers (carapace)
+            max_results: 100
+          }
         }
         history: {
           max_size: 100_000
           sync_on_enter: true
           file_format: sqlite
         }
+        keybindings: (
+        [
+          # ── HISTORY SEARCH ─────────────────────────────────────────────
+          { name: atuin   modifier: control keycode: char_r  mode: [vi_insert vi_normal]
+            event: { send: ExecuteHostCommand cmd: "commandline edit --insert (atuin search --interactive 2>/dev/null)" } }
+
+          # ── HISTORY HINT ───────────────────────────────────────────────
+          { name: hist_ht modifier: shift   keycode: right   mode: vi_insert
+            event: { send: HistoryHintComplete } }
+
+          # ── COMPLETION MENU ────────────────────────────────────────────
+          { name: tab     modifier: none    keycode: tab     mode: [vi_insert vi_normal]
+            event: { until: [{ send: Menu name: completion_menu } { send: MenuNext }] } }
+          { name: s_tab   modifier: shift   keycode: backtab mode: [vi_insert vi_normal]
+            event: { send: MenuPrevious } }
+          { name: ctrl_j  modifier: control keycode: char_j  mode: vi_insert
+            event: { until: [{ send: MenuDown } { send: Enter }] } }
+
+          # ── HISTORY / MENU NAV ─────────────────────────────────────────
+          { name: ctrl_p  modifier: control keycode: char_p  mode: [vi_insert vi_normal]
+            event: { until: [{ send: MenuUp } { send: Up }] } }
+          { name: ctrl_n  modifier: control keycode: char_n  mode: [vi_insert vi_normal]
+            event: { until: [{ send: MenuDown } { send: Down }] } }
+
+          # ── CLEAR / EDIT / UNDO ────────────────────────────────────────
+          { name: ctrl_l  modifier: control keycode: char_l  mode: [vi_insert vi_normal]
+            event: { send: ClearScreen } }
+          { name: ctrl_o  modifier: control keycode: char_o  mode: [vi_insert vi_normal]
+            event: { send: OpenEditor } }
+          { name: alt_u   modifier: alt     keycode: char_u  mode: vi_insert
+            event: { edit: Undo } }
+        ])
       }
 
       # Aliases
@@ -67,8 +123,6 @@
       alias update = sudo nix flake update /etc/nixos
       alias nsh    = nix-shell -p
       alias gcold  = sudo nix-collect-garbage --delete-older-than 14d
-      alias vim    = nvim
-      alias vi     = nvim
       alias ll     = eza -la --icons --git
       alias lt     = eza --tree --icons
       alias cat    = bat
@@ -85,32 +139,10 @@
     '';
   };
 
-  # ── Neovim + LazyVim ──────────────────────────────────────────────────
-  programs.neovim = {
-    enable        = true;
-    defaultEditor = true;
-    viAlias       = true;
-    vimAlias      = true;
-    extraPackages = with pkgs; [
-      # LSP servers
-      lua-language-server
-      nixd             # Nix LSP (flake-aware)
-      nix-doc          # hover docs for Nix builtins
-      nodePackages.typescript-language-server
-      basedpyright     # actively maintained pyright fork with better defaults
-      # Formatters / linters
-      stylua
-      nixpkgs-fmt
-      ruff             # Python linter + formatter (replaces black for most uses)
-      black            # kept for projects that require black specifically
-      ripgrep          # telescope live_grep
-      fd               # telescope find_files
-      tree-sitter
-      gcc
-    ];
-  };
-
-  home.file.".config/nvim".source = ../config/nvim;
+  # ── Neovim — configured via NixVim in home/nixvim.nix ────────────────
+  # All plugins, LSP servers, formatters, and treesitter grammars are
+  # pre-fetched by Nix at build time. No lazy.nvim, no Mason, no runtime
+  # downloads. See home/nixvim.nix for the full config.
 
   # ── Git ───────────────────────────────────────────────────────────────
   # delta.enable adds delta as the pager; catppuccin.delta themes it.
@@ -135,6 +167,31 @@
 
   programs.lazygit.enable = true;
 
+  # ── Carapace — universal external completer ──────────────────────────
+  # Provides subcommand completions for 1000+ CLI tools (git, docker,
+  # kubectl, nix, etc.). Without this, nushell falls back to file/dir
+  # completion for external commands. Injects via extraConfig with
+  # upsert — non-destructive to existing completions config.
+  programs.carapace = {
+    enable = true;
+    enableNushellIntegration = true;
+  };
+
+  # ── Atuin — shell history search ───────────────────────────────────────
+  # SQLite-backed fuzzy history search across sessions. Replaces basic
+  # Ctrl+R with filterable, searchable, cross-session history.
+  # Does NOT conflict with fzf (fzf has no nushell integration enabled).
+  programs.atuin = {
+    enable = true;
+    enableNushellIntegration = true;
+    settings = {
+      auto_sync    = false;  # local only — no cloud sync
+      update_check = false;
+      style        = "compact";
+      inline_height = 20;
+    };
+  };
+
   # ── Zoxide, fzf, starship ─────────────────────────────────────────────
   programs.zoxide = {
     enable                   = true;
@@ -158,12 +215,13 @@
         "$git_branch"
         "$git_status"
         "$python$rust$nodejs$nix_shell"
-        "$character"
+        "$container"   # shows 📦 image-name when inside podman/docker
+        "\n"           # newline before prompt character
       ];
-      character = {
-        success_symbol = "[❯](bold green)";
-        error_symbol   = "[❯](bold red)";
-      };
+      # character module disabled — starship has no vi mode support for nushell
+      # (starship#4897). Vi mode indicator is handled by nushell's native
+      # PROMPT_INDICATOR_VI_INSERT / PROMPT_INDICATOR_VI_NORMAL in envFile.
+      character.disabled = true;
       directory = {
         truncation_length = 3;
         style             = "bold blue";
@@ -174,6 +232,15 @@
         symbol = "❄ ";
         style  = "bold teal";
       };
+      # Container module — shows when running inside podman/docker.
+      # Detection: reads /.dockerenv (docker) or /run/.containerenv (podman).
+      # The nushell env CONTAINER / PODMAN_CONTAINER are NOT checked by starship;
+      # detection is purely file-based, so it works regardless of shell.
+      container = {
+        symbol = "📦 ";
+        style  = "bold yellow";
+        format = "[$symbol$name]($style) ";
+      };
     };
   };
 
@@ -183,6 +250,7 @@
     settings = {
       autoshare  = false;
       autoupdate = true;
+      plugin     = [ "oh-my-opencode" "opencode-gemini-auth@latest" ];
     };
   };
 

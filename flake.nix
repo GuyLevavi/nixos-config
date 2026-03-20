@@ -15,12 +15,24 @@
       url = "github:catppuccin/nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, catppuccin, ... }: {
+  outputs = { self, nixpkgs, home-manager, catppuccin, nixvim, ... }:
+  let
+    # Shared home-manager modules used by all configurations.
+    commonHomeModules = [
+      catppuccin.homeModules.catppuccin
+      nixvim.homeModules.nixvim
+    ];
+  in {
     nixosConfigurations = {
 
-      # Intel desktop (primary machine)
+      # Intel desktop (primary machine) — online, GUI, Hyprland
       nixbox = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
@@ -32,10 +44,7 @@
               useGlobalPkgs = true;
               useUserPackages = true;
               users.gl = {
-                imports = [
-                  ./home.nix
-                  catppuccin.homeModules.catppuccin
-                ];
+                imports = [ ./home.nix ] ++ commonHomeModules;
               };
               backupFileExtension = "backup";
             };
@@ -45,15 +54,23 @@
 
     };
 
-    # Standalone home-manager for WSL / Ubuntu / Docker environments.
+    # ── Standalone home-manager configurations ────────────────────────────
     # Apply with:
-    #   nix run nixpkgs#home-manager -- switch --flake /path/to/config#wsl
+    #   nix run nixpkgs#home-manager -- switch --flake /path/to/config#<name>
+
+    # Online headless — WSL / Ubuntu / Docker (has autoupdate, cloud plugins)
     homeConfigurations.wsl = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      modules = [
-        ./home/base.nix
-        catppuccin.homeModules.catppuccin
-      ];
+      modules = [ ./home/base.nix ] ++ commonHomeModules;
     };
+
+    # Airgap headless — for exporting closures to offline networks.
+    # Differs from wsl: autoupdate disabled, no online plugins.
+    # Build closure: nix build .#homeConfigurations.airgap.activationPackage
+    homeConfigurations.airgap = home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      modules = [ ./home/base.nix ./home/airgap.nix ] ++ commonHomeModules;
+    };
+
   };
 }
