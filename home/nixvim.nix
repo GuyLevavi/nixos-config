@@ -185,7 +185,11 @@
         setupLspCapabilities = true;
         settings = {
           keymap.preset = "super-tab";
-          sources.providers.buffer.score_offset = -7;
+          sources = {
+            providers.buffer.score_offset = -7;
+            # Enable completion in : / ? command line
+            cmdline = {};
+          };
           completion = {
             accept.auto_brackets.enabled = true;
             documentation.auto_show      = true;
@@ -375,8 +379,8 @@
             ];
             footer.__raw = ''
               function()
-                local stats = require("lazy").stats()
-                return { "⚡ " .. stats.count .. " plugins loaded" }
+                local v = vim.version()
+                return { "⚡ Neovim v" .. v.major .. "." .. v.minor .. "." .. v.patch }
               end
             '';
           };
@@ -410,9 +414,10 @@
       mini = {
         enable = true;
         modules = {
-          surround = {};  # sa/sd/sr for add/delete/replace surrounding
-          ai       = {};  # text objects: a/i with function, class, etc.
+          surround = {};   # sa/sd/sr for add/delete/replace surrounding
+          ai       = {};   # text objects: a/i with function, class, etc.
           bufremove = {};  # smarter buffer deletion (preserves layout)
+          files    = {};   # floating file explorer (<leader>fm)
         };
       };
     };
@@ -420,7 +425,9 @@
     # ── Keymaps (LazyVim-compatible defaults) ────────────────────────────
     keymaps = [
       # ── File explorer ────────────────────────────────────────────────
-      { key = "<leader>e"; action = "<cmd>Neotree toggle<cr>"; options.desc = "Explorer"; }
+      { key = "<leader>e";  action = "<cmd>Neotree toggle<cr>"; options.desc = "Explorer (neo-tree)"; }
+      { key = "<leader>fm"; action.__raw = "function() require('mini.files').open(vim.api.nvim_buf_get_name(0)) end"; options.desc = "Mini files (current file)"; }
+      { key = "<leader>fM"; action.__raw = "function() require('mini.files').open() end"; options.desc = "Mini files (cwd)"; }
 
       # ── Git ──────────────────────────────────────────────────────────
       { key = "<leader>gg"; action = "<cmd>Neogit<cr>"; options.desc = "Neogit"; }
