@@ -188,7 +188,7 @@
           sources = {
             providers.buffer.score_offset = -7;
             # Enable completion in : / ? command line
-            cmdline = {};
+            cmdline = [];
           };
           completion = {
             accept.auto_brackets.enabled = true;
@@ -224,14 +224,10 @@
       };
 
       # ── DAP — Python debugging ───────────────────────────────────────
-      dap = {
-        enable = true;
-        extensions = {
-          dap-python.enable       = true;
-          dap-ui.enable           = true;
-          dap-virtual-text.enable = true;
-        };
-      };
+      dap.enable              = true;
+      dap-python.enable       = true;
+      dap-ui.enable           = true;
+      dap-virtual-text.enable = true;
 
       # ── Git ──────────────────────────────────────────────────────────
       gitsigns = {

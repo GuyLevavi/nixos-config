@@ -1,0 +1,50 @@
+# Dockerfile.headless — inject Nix + home-manager headless config onto Ubuntu
+#
+# For custom base images, replace the FROM line with your image.
+# Requirements: the base image must have curl, xz-utils, git, ca-certificates,
+# and a user 'gl' with sudo. See the "Custom base image" section below.
+#
+# Build:  podman build -f Dockerfile.headless -t dev-headless .
+# Run:    podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
+# Ship:   podman save dev-headless | gzip > dev-headless.tar.gz
+#         (transfer via USB, then: podman load < dev-headless.tar.gz)
+
+# ── Base layer ────────────────────────────────────────────────────────
+FROM ubuntu:24.04
+
+# To use a custom base image instead:
+#   FROM your-registry.internal/your-base-image:tag
+# Then skip the next RUN block if the base already has these packages + user.
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl xz-utils sudo git ca-certificates locales \
+    && locale-gen en_US.UTF-8 \
+    && useradd -m -s /bin/bash gl \
+    && echo "gl ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/gl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+# ── Nix (single-user, no daemon) ─────────────────────────────────────
+USER gl
+WORKDIR /home/gl
+ENV USER=gl HOME=/home/gl
+
+RUN curl -L https://nixos.org/nix/install | sh -s -- --no-daemon \
+    && mkdir -p /home/gl/.config/nix \
+    && echo 'experimental-features = flakes nix-command' >> /home/gl/.config/nix/nix.conf
+
+ENV PATH=/home/gl/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
+
+# ── Config + home-manager ─────────────────────────────────────────────
+COPY --chown=gl:gl . /home/gl/nixos-config
+
+# Remove Ubuntu defaults that conflict with home-manager managed files
+RUN rm -f /home/gl/.profile /home/gl/.bashrc /home/gl/.bash_logout
+
+RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
+    && nix run nixpkgs#home-manager -- switch --flake /home/gl/nixos-config#wsl
+
+# ── Runtime ───────────────────────────────────────────────────────────
+# Mount SSH keys: podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
+CMD ["/home/gl/.nix-profile/bin/nu"]

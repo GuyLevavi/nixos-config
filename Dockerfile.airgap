@@ -1,0 +1,64 @@
+# Dockerfile.airgap — Runs on the AIRGAPPED machine. Zero network access.
+#
+# Prerequisites (built on connected machine):
+#   ./scripts/build-airgap-closure.sh    → produces airgap-artifacts/
+#
+# Build (on airgap):
+#   podman build -f Dockerfile.airgap \
+#     --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
+#     -t dev-headless .
+#
+# Run:
+#   podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
+#
+# For custom base images, replace the FROM line below.
+
+# ── Base layer ────────────────────────────────────────────────────────
+# Replace with your custom base image:
+#   FROM your-registry.internal/your-base-image:tag
+FROM ubuntu:24.04
+
+# The store path of the home-manager generation (from build-airgap-closure.sh)
+ARG ACTIVATION_STORE_PATH
+
+# Skip this block if your custom base image already has these:
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      xz-utils sudo locales \
+    && locale-gen en_US.UTF-8 \
+    && useradd -m -s /bin/bash gl \
+    && echo "gl ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/gl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+USER gl
+WORKDIR /home/gl
+ENV USER=gl HOME=/home/gl
+
+# ── Install Nix offline ──────────────────────────────────────────────
+COPY --chown=gl:gl airgap-artifacts/nix-*-x86_64-linux.tar.xz /tmp/nix.tar.xz
+
+RUN cd /tmp && tar xf nix.tar.xz && cd nix-* \
+    && ./install --no-daemon --no-channel-add \
+    && rm -rf /tmp/nix* \
+    && mkdir -p /home/gl/.config/nix \
+    && echo 'experimental-features = flakes nix-command' >> /home/gl/.config/nix/nix.conf
+
+ENV PATH=/home/gl/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
+
+# ── Import pre-built Nix store closure (offline) ─────────────────────
+COPY --chown=gl:gl airgap-artifacts/nix-store/ /tmp/nix-store/
+
+RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
+    && nix copy --from "file:///tmp/nix-store" --all --no-check-sigs \
+    && rm -rf /tmp/nix-store
+
+# ── Activate home-manager (everything already in /nix/store) ─────────
+# Remove Ubuntu defaults that conflict with home-manager managed files
+RUN rm -f /home/gl/.profile /home/gl/.bashrc /home/gl/.bash_logout
+
+RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
+    && ${ACTIVATION_STORE_PATH}/activate
+
+# ── Runtime ───────────────────────────────────────────────────────────
+CMD ["/home/gl/.nix-profile/bin/nu"]

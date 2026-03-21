@@ -26,6 +26,7 @@
   catppuccin.opencode.enable = true;
   catppuccin.delta.enable    = true;   # git diff pager
   catppuccin.atuin.enable    = true;   # shell history search
+  catppuccin.tmux.enable     = true;
 
   # ── Shell: Bash (login) → exec Nushell ────────────────────────────────
   programs.bash = {
@@ -107,6 +108,12 @@
             event: { until: [{ send: MenuUp } { send: Up }] } }
           { name: ctrl_n  modifier: control keycode: char_n  mode: [vi_insert vi_normal]
             event: { until: [{ send: MenuDown } { send: Down }] } }
+
+          # ── VI NORMAL — history navigation ─────────────────────────────
+          { name: vi_up   modifier: none    keycode: char_k  mode: vi_normal
+            event: { send: Up } }
+          { name: vi_down modifier: none    keycode: char_j  mode: vi_normal
+            event: { send: Down } }
 
           # ── CLEAR / EDIT / UNDO ────────────────────────────────────────
           { name: ctrl_l  modifier: control keycode: char_l  mode: [vi_insert vi_normal]
@@ -254,6 +261,62 @@
     };
   };
 
+  # ── Tmux ──────────────────────────────────────────────────────────────
+  # Declarative config — replaces ~/.tmux.conf. catppuccin.tmux themes it.
+  programs.tmux = {
+    enable = true;
+    prefix = "C-a";
+    baseIndex = 1;
+    escapeTime = 0;
+    terminal = "tmux-256color";
+    mouse = true;
+    extraConfig = ''
+      # True color passthrough
+      set -as terminal-features ",*:RGB"
+
+      # Pane splits — open in current path
+      bind | split-window -h -c "#{pane_current_path}"
+      bind - split-window -v -c "#{pane_current_path}"
+      unbind '"'
+      unbind %
+
+      # Vim-style pane navigation
+      bind h select-pane -L
+      bind j select-pane -D
+      bind k select-pane -U
+      bind l select-pane -R
+
+      # Status bar at top
+      set -g status-position top
+
+      # Catppuccin status modules
+      set -g @catppuccin_flavor "mocha"
+      set -g @catppuccin_status_modules_right "session date_time"
+      set -g @catppuccin_date_time_text "%H:%M"
+
+      # Continuum auto-save interval
+      set -g @continuum-restore "on"
+      set -g @continuum-save-interval "15"
+
+      # Resurrect — save vim/nvim sessions
+      set -g @resurrect-capture-pane-contents "on"
+
+      # SessionX — fuzzy session manager
+      set -g @sessionx-bind "O"
+
+      # Floax — floating scratch pane
+      set -g @floax-bind "p"
+    '';
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      yank
+      resurrect
+      continuum
+      tmux-sessionx
+      tmux-floax
+    ];
+  };
+
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
     # Core CLI tools
@@ -276,7 +339,7 @@
 
     # Terminal utilities
     yazi       # terminal file manager
-    tmux       # terminal multiplexer (persistent sessions over SSH/WSL)
+    television # fuzzy finder (files, git, env vars, processes, docker)
     glow       # markdown viewer
     lnav       # log file viewer
     fastfetch  # system info
