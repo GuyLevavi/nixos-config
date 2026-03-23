@@ -358,6 +358,61 @@
           files    = {};   # floating file explorer (<leader>fm)
         };
       };
+
+      # ── Snacks.nvim — modern utility collection ──────────────────────────
+      # Replaces: dashboard-nvim, indent-blankline, illuminate.
+      # Adds: notifier toasts, floating terminal, git-browse, lazygit float.
+      snacks = {
+        enable = true;
+        settings = {
+          # ── Replaces dashboard-nvim ───────────────────────────────────────
+          dashboard = {
+            enabled = true;
+            preset = {
+              header = ''
+                  ███╗   ██╗██╗██╗  ██╗██╗   ██╗██╗███╗   ███╗
+                  ████╗  ██║██║╚██╗██╔╝██║   ██║██║████╗ ████║
+                  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║██║██╔████╔██║
+                  ██║╚██╗██║██║ ██╔██╗ ╚██╗ ██╔╝██║██║╚██╔╝██║
+                  ██║ ╚████║██║██╔╝ ██╗ ╚████╔╝ ██║██║ ╚═╝ ██║
+                  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝     ╚═╝'';
+              keys = [
+                { icon = " "; key = "f"; desc = "Find File"; action = ":Telescope find_files"; }
+                { icon = " "; key = "r"; desc = "Recent Files"; action = ":Telescope oldfiles"; }
+                { icon = " "; key = "/"; desc = "Grep"; action = ":Telescope live_grep"; }
+                { icon = " "; key = "s"; desc = "Restore Session"; action.__raw = "function() require('persistence').load() end"; }
+                { icon = " "; key = "q"; desc = "Quit"; action = ":qa"; }
+              ];
+            };
+          };
+          # ── Replaces indent-blankline ─────────────────────────────────────
+          indent = {
+            enabled = true;
+            animate.enabled = true;
+          };
+          # ── Replaces illuminate ───────────────────────────────────────────
+          words = {
+            enabled  = true;
+            debounce = 200;
+          };
+          # ── New: toast notifications ──────────────────────────────────────
+          notifier = {
+            enabled = true;
+            timeout = 3000;
+          };
+          # ── New: floating terminal ────────────────────────────────────────
+          terminal.enabled = true;
+          # ── New: open file in browser ─────────────────────────────────────
+          gitbrowse.enabled = true;
+          # ── New: lazygit in a float ───────────────────────────────────────
+          lazygit.enabled = true;
+          # ── Disable: conflicts with telescope / mini.bufremove ────────────
+          picker.enabled    = false;
+          bufdelete.enabled = false;
+          scroll.enabled    = false;
+          animate.enabled   = false;
+        };
+      };
     };
 
     # ── Keymaps (LazyVim-compatible defaults) ────────────────────────────
@@ -398,7 +453,7 @@
 
       # ── UI toggles ──────────────────────────────────────────────────
       { mode = "n"; key = "<leader>ur"; action = "<cmd>nohlsearch<Bar>diffupdate<Bar>normal! <C-L><cr>"; options.desc = "Redraw / clear"; }
-      { mode = "n"; key = "<leader>un"; action.__raw = "function() vim.o.number = not vim.o.number end"; options.desc = "Toggle line numbers"; }
+      { mode = "n"; key = "<leader>uN"; action.__raw = "function() vim.o.number = not vim.o.number end"; options.desc = "Toggle line numbers"; }
       { mode = "n"; key = "<leader>uw"; action.__raw = "function() vim.o.wrap = not vim.o.wrap end"; options.desc = "Toggle word wrap"; }
       { mode = "n"; key = "<leader>ul"; action.__raw = "function() vim.o.relativenumber = not vim.o.relativenumber end"; options.desc = "Toggle relative numbers"; }
 
@@ -459,6 +514,13 @@
       # ── Yank enhancements ────────────────────────────────────────────
       # Don't clobber register on paste in visual mode
       { mode = "v"; key = "p"; action = ''"_dP''; options.desc = "Paste without yank"; }
+
+      # ── Snacks ────────────────────────────────────────────────────────────
+      { mode = "n"; key = "<C-\\>"; action.__raw = "function() require('snacks').terminal() end"; options.desc = "Toggle terminal"; }
+      { mode = "t"; key = "<C-\\>"; action.__raw = "function() require('snacks').terminal() end"; options.desc = "Toggle terminal"; }
+      { mode = "n"; key = "<leader>gB"; action.__raw = "function() require('snacks').gitbrowse() end"; options.desc = "Git browse (open in browser)"; }
+      { mode = "n"; key = "<leader>gl"; action.__raw = "function() require('snacks').lazygit() end"; options.desc = "Lazygit (float)"; }
+      { mode = "n"; key = "<leader>un"; action.__raw = "function() require('snacks').notifier.hide() end"; options.desc = "Dismiss notifications"; }
     ];
 
     # ── Performance ───────────────────────────────────────────────────────
