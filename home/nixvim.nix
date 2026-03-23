@@ -120,7 +120,7 @@
           "<leader>fw" = { action = "grep_string"; options.desc = "Grep word"; };
           "<leader>gc" = { action = "git_commits"; options.desc = "Git commits"; };
           "<leader>gs" = { action = "git_status"; options.desc = "Git status"; };
-          "<C-p>"      = { action = "git_files"; options.desc = "Git files"; };
+          "<leader>fG" = { action = "git_files"; options.desc = "Git files"; };
         };
         settings.defaults = {
           sorting_strategy = "ascending";
@@ -460,6 +460,22 @@
         };
       };
 
+      # ── Yanky — clipboard ring ────────────────────────────────────────────
+      # p/P paste from the ring; <C-p>/<C-n> cycle back/forward.
+      # <leader>fy browses history in telescope.
+      yanky = {
+        enable = true;
+        settings = {
+          ring = {
+            history_length               = 100;
+            storage                      = "shada";
+            sync_with_numbered_registers = true;
+          };
+          preserve_cursor_position.enabled = true;
+          textobj.enabled                  = false;
+        };
+      };
+
       # ── Venv Selector — Python virtualenv switcher ────────────────────────
       # <leader>cv to pick a venv; auto-updates basedpyright + ruff LSP.
       venv-selector = {
@@ -593,10 +609,6 @@
       { mode = ["n" "i" "v"]; key = "<C-s>"; action = "<cmd>w<cr><esc>"; options.desc = "Save"; }
       { mode = "n"; key = "<leader>qq"; action = "<cmd>qa<cr>"; options.desc = "Quit all"; }
 
-      # ── Yank enhancements ────────────────────────────────────────────
-      # Don't clobber register on paste in visual mode
-      { mode = "v"; key = "p"; action = ''"_dP''; options.desc = "Paste without yank"; }
-
       # ── Snacks ────────────────────────────────────────────────────────────
       { mode = "n"; key = "<C-\\>"; action.__raw = "function() require('snacks').terminal() end"; options.desc = "Toggle terminal"; }
       { mode = "t"; key = "<C-\\>"; action.__raw = "function() require('snacks').terminal() end"; options.desc = "Toggle terminal"; }
@@ -613,6 +625,15 @@
 
       # ── Venv Selector ─────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>cv"; action = "<cmd>VenvSelect<cr>"; options.desc = "Select Python venv"; }
+
+      # ── Yanky — clipboard ring ────────────────────────────────────────────
+      { mode = ["n" "x"]; key = "p";     action = "<Plug>(YankyPutAfter)";      options.desc = "Paste after"; }
+      { mode = ["n" "x"]; key = "P";     action = "<Plug>(YankyPutBefore)";     options.desc = "Paste before"; }
+      { mode = ["n" "x"]; key = "gp";    action = "<Plug>(YankyGPutAfter)";     options.desc = "Paste after (cursor after)"; }
+      { mode = ["n" "x"]; key = "gP";    action = "<Plug>(YankyGPutBefore)";    options.desc = "Paste before (cursor after)"; }
+      { mode = "n";       key = "<C-p>"; action = "<Plug>(YankyCycleForward)";  options.desc = "Cycle yank forward"; }
+      { mode = "n";       key = "<C-n>"; action = "<Plug>(YankyCycleBackward)"; options.desc = "Cycle yank backward"; }
+      { mode = "n";       key = "<leader>fy"; action = "<cmd>Telescope yank_history<cr>"; options.desc = "Yank history"; }
 
       # ── Neotest ───────────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>tr"; action.__raw = "function() require('neotest').run.run() end"; options.desc = "Run nearest test"; }
