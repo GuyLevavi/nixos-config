@@ -20,6 +20,8 @@
       python3Packages.debugpy  # Python DAP adapter
       ripgrep                  # telescope live_grep
       fd                       # telescope find_files
+      shfmt                    # shell formatter (used by conform)
+      clang-tools              # provides clang-format (used by conform)
     ];
 
     globals = {
@@ -192,6 +194,14 @@
           docker_compose_language_service.enable = true;
           # Helm charts
           helm_ls.enable = true;
+          # C / C++
+          clangd.enable = true;
+          # Bash / Shell scripts
+          bashls.enable = true;
+          # Markdown
+          marksman.enable = true;
+          # TOML (pyproject.toml, Cargo.toml)
+          taplo.enable = true;
         };
       };
 
@@ -235,6 +245,10 @@
             json       = [ "prettier" ];
             yaml       = [ "prettier" ];
             markdown   = [ "prettier" ];
+            sh         = [ "shfmt" ];
+            bash       = [ "shfmt" ];
+            c          = [ "clang_format" ];
+            cpp        = [ "clang_format" ];
           };
         };
       };
