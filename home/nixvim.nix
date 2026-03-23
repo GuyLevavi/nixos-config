@@ -171,8 +171,13 @@
           basedpyright = {
             enable = true;
             settings.basedpyright.analysis = {
-              typeCheckingMode     = "standard";
+              typeCheckingMode      = "standard";
               autoImportCompletions = true;
+              diagnosticSeverityOverrides = {
+                reportMissingTypeStubs    = "none";  # numpy, pandas, etc. lack stubs
+                reportUnknownMemberType   = "none";  # too noisy in dynamic Python
+                reportUnknownVariableType = "none";  # same
+              };
             };
           };
           # Python — linting, formatting, code actions (ruff's built-in LSP)
@@ -609,6 +614,10 @@
       { key = "<leader>dO"; action.__raw = "function() require('dap').step_out() end"; options.desc = "Step out"; }
       { key = "<leader>dr"; action.__raw = "function() require('dap').repl.toggle() end"; options.desc = "REPL"; }
       { key = "<leader>du"; action.__raw = "function() require('dapui').toggle() end"; options.desc = "DAP UI"; }
+      # ── DAP — additional keymaps ──────────────────────────────────────────
+      { key = "<leader>dB"; action.__raw = "function() require('dap').set_breakpoint(vim.fn.input('Breakpoint condition: ')) end"; options.desc = "Conditional breakpoint"; }
+      { key = "<leader>dC"; action.__raw = "function() require('dap').run_to_cursor() end"; options.desc = "Run to cursor"; }
+      { key = "<leader>dt"; action.__raw = "function() require('dap').terminate() end"; options.desc = "Terminate session"; }
 
       # ── Format ───────────────────────────────────────────────────────
       { mode = ["n" "v"]; key = "<leader>cf"; action.__raw = "function() require('conform').format({ async = true, lsp_fallback = true }) end"; options.desc = "Format"; }
@@ -690,5 +699,19 @@
       enable  = true;
       plugins = true;
     };
+
+    # ── Extra Lua (runs after plugins are loaded) ─────────────────────────
+    extraConfigLua = ''
+      -- Disable ruff hover: basedpyright provides better type/docstring hover.
+      -- ruff hover only shows lint rule descriptions which is less useful.
+      vim.api.nvim_create_autocmd("LspAttach", {
+        callback = function(args)
+          local client = vim.lsp.get_client_by_id(args.data.client_id)
+          if client and client.name == "ruff" then
+            client.server_capabilities.hoverProvider = false
+          end
+        end,
+      })
+    '';
   };
 }
