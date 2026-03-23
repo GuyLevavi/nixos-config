@@ -460,6 +460,17 @@
         };
       };
 
+      # ── Venv Selector — Python virtualenv switcher ────────────────────────
+      # <leader>cv to pick a venv; auto-updates basedpyright + ruff LSP.
+      venv-selector = {
+        enable   = true;
+        settings = {
+          auto_refresh         = true;
+          search_venv_managers = false;
+          dap_enabled          = true;
+        };
+      };
+
       # ── Render Markdown — inline markdown rendering ───────────────────────
       # Renders .md files with styled headers, bold, code blocks, tables.
       # Toggle with <leader>um. Auto-enables on markdown filetype.
@@ -599,6 +610,9 @@
 
       # ── Render Markdown ───────────────────────────────────────────────────
       { mode = "n"; key = "<leader>um"; action = "<cmd>RenderMarkdown toggle<cr>"; options.desc = "Toggle markdown render"; }
+
+      # ── Venv Selector ─────────────────────────────────────────────────────
+      { mode = "n"; key = "<leader>cv"; action = "<cmd>VenvSelect<cr>"; options.desc = "Select Python venv"; }
 
       # ── Neotest ───────────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>tr"; action.__raw = "function() require('neotest').run.run() end"; options.desc = "Run nearest test"; }
