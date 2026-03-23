@@ -445,6 +445,21 @@
         };
       };
 
+      # ── Neotest — test runner ─────────────────────────────────────────────
+      # Runs pytest from the editor. <leader>tr = run nearest, <leader>ts = summary.
+      # Integrates with dap-python for <leader>td = debug nearest test.
+      neotest = {
+        enable = true;
+        adapters.python = {
+          enable   = true;
+          settings.runner = "pytest";
+        };
+        settings = {
+          output.open_on_run = true;
+          status.signs       = true;
+        };
+      };
+
       # ── Render Markdown — inline markdown rendering ───────────────────────
       # Renders .md files with styled headers, bold, code blocks, tables.
       # Toggle with <leader>um. Auto-enables on markdown filetype.
@@ -584,6 +599,14 @@
 
       # ── Render Markdown ───────────────────────────────────────────────────
       { mode = "n"; key = "<leader>um"; action = "<cmd>RenderMarkdown toggle<cr>"; options.desc = "Toggle markdown render"; }
+
+      # ── Neotest ───────────────────────────────────────────────────────────
+      { mode = "n"; key = "<leader>tr"; action.__raw = "function() require('neotest').run.run() end"; options.desc = "Run nearest test"; }
+      { mode = "n"; key = "<leader>tT"; action.__raw = "function() require('neotest').run.run(vim.fn.expand('%')) end"; options.desc = "Run file"; }
+      { mode = "n"; key = "<leader>ts"; action.__raw = "function() require('neotest').summary.toggle() end"; options.desc = "Test summary"; }
+      { mode = "n"; key = "<leader>to"; action.__raw = "function() require('neotest').output.open({ enter = true }) end"; options.desc = "Test output"; }
+      { mode = "n"; key = "<leader>tS"; action.__raw = "function() require('neotest').run.stop() end"; options.desc = "Stop tests"; }
+      { mode = "n"; key = "<leader>td"; action.__raw = "function() require('neotest').run.run({ strategy = 'dap' }) end"; options.desc = "Debug nearest test"; }
 
       # ── Smart Splits — navigate (tmux-aware) ─────────────────────────────
       { mode = "n"; key = "<C-h>"; action.__raw = "function() require('smart-splits').move_cursor_left() end"; options.desc = "Window left"; }
