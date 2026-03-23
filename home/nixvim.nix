@@ -476,6 +476,17 @@
         };
       };
 
+      # ── Grug Far — project-wide find & replace ───────────────────────────
+      # Panel-based search/replace with ripgrep. LazyVim's replacement for spectre.
+      # <leader>sr = open; <leader>sw = search word under cursor.
+      grug-far = {
+        enable = true;
+        settings = {
+          headerMaxWidth  = 80;
+          keymaps.replace = "<C-enter>";
+        };
+      };
+
       # ── Venv Selector — Python virtualenv switcher ────────────────────────
       # <leader>cv to pick a venv; auto-updates basedpyright + ruff LSP.
       venv-selector = {
@@ -622,6 +633,11 @@
 
       # ── Render Markdown ───────────────────────────────────────────────────
       { mode = "n"; key = "<leader>um"; action = "<cmd>RenderMarkdown toggle<cr>"; options.desc = "Toggle markdown render"; }
+
+      # ── Grug Far — find & replace ─────────────────────────────────────────
+      { mode = "n"; key = "<leader>sr"; action = "<cmd>GrugFar<cr>"; options.desc = "Find & Replace (grug-far)"; }
+      { mode = "n"; key = "<leader>sw"; action.__raw = "function() require('grug-far').open({ prefills = { search = vim.fn.expand('<cword>') } }) end"; options.desc = "Search word (grug-far)"; }
+      { mode = "v"; key = "<leader>sw"; action.__raw = "function() require('grug-far').with_visual_selection() end"; options.desc = "Search selection (grug-far)"; }
 
       # ── Venv Selector ─────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>cv"; action = "<cmd>VenvSelect<cr>"; options.desc = "Select Python venv"; }
