@@ -91,10 +91,25 @@
         settings.max_lines = 3;
       };
 
+      # ── Aerial — code symbol outline ─────────────────────────────────────
+      aerial = {
+        enable = true;
+        settings = {
+          backends         = [ "lsp" "treesitter" ];
+          layout.placement = "edge";
+          attach_mode      = "global";
+          show_guides      = true;
+          filter_kind      = false;
+        };
+      };
+
       # ── Telescope ─────────────────────────────────────────────────────
       telescope = {
         enable = true;
-        extensions.fzf-native.enable = true;
+        extensions = {
+          fzf-native.enable = true;
+          aerial.enable     = true;
+        };
         keymaps = {
           "<leader>ff" = { action = "find_files"; options.desc = "Find files"; };
           "<leader>fg" = { action = "live_grep"; options.desc = "Grep"; };
@@ -330,6 +345,8 @@
             { __unkeyed-1 = "<leader>s"; group = "Search"; }
             { __unkeyed-1 = "<leader>u"; group = "UI"; }
             { __unkeyed-1 = "<leader>q"; group = "Quit/Session"; }
+            { __unkeyed-1 = "<leader>l"; group = "Language"; }
+            { __unkeyed-1 = "<leader>t"; group = "Test"; }
           ];
         };
       };
@@ -521,6 +538,10 @@
       { mode = "n"; key = "<leader>gB"; action.__raw = "function() require('snacks').gitbrowse() end"; options.desc = "Git browse (open in browser)"; }
       { mode = "n"; key = "<leader>gl"; action.__raw = "function() require('snacks').lazygit() end"; options.desc = "Lazygit (float)"; }
       { mode = "n"; key = "<leader>un"; action.__raw = "function() require('snacks').notifier.hide() end"; options.desc = "Dismiss notifications"; }
+
+      # ── Aerial ────────────────────────────────────────────────────────────
+      { mode = "n"; key = "<leader>lo"; action = "<cmd>AerialToggle<cr>"; options.desc = "Toggle outline"; }
+      { mode = "n"; key = "<leader>ls"; action = "<cmd>Telescope aerial<cr>"; options.desc = "Symbol search"; }
     ];
 
     # ── Performance ───────────────────────────────────────────────────────
