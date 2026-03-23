@@ -376,6 +376,20 @@
         };
       };
 
+      # ── Smart Splits — tmux-aware window navigation ───────────────────────
+      # <C-hjkl> crosses Neovim splits AND tmux panes.
+      # <A-arrow> resizes splits (avoids conflict with <A-j>/<A-k> move-line).
+      smart-splits = {
+        enable = true;
+        settings = {
+          ignored_filetypes    = [ "nofile" "quickfix" "prompt" ];
+          ignored_buftypes     = [ "NvimTree" ];
+          default_amount       = 3;
+          at_edge              = "wrap";
+          move_cursor_same_row = false;
+        };
+      };
+
       # ── Snacks.nvim — modern utility collection ──────────────────────────
       # Replaces: dashboard-nvim, indent-blankline, illuminate.
       # Adds: notifier toasts, floating terminal, git-browse, lazygit float.
@@ -542,6 +556,17 @@
       # ── Aerial ────────────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>lo"; action = "<cmd>AerialToggle<cr>"; options.desc = "Toggle outline"; }
       { mode = "n"; key = "<leader>ls"; action = "<cmd>Telescope aerial<cr>"; options.desc = "Symbol search"; }
+
+      # ── Smart Splits — navigate (tmux-aware) ─────────────────────────────
+      { mode = "n"; key = "<C-h>"; action.__raw = "function() require('smart-splits').move_cursor_left() end"; options.desc = "Window left"; }
+      { mode = "n"; key = "<C-j>"; action.__raw = "function() require('smart-splits').move_cursor_down() end"; options.desc = "Window down"; }
+      { mode = "n"; key = "<C-k>"; action.__raw = "function() require('smart-splits').move_cursor_up() end"; options.desc = "Window up"; }
+      { mode = "n"; key = "<C-l>"; action.__raw = "function() require('smart-splits').move_cursor_right() end"; options.desc = "Window right"; }
+      # ── Smart Splits — resize (<A-arrow> avoids <A-j>/<A-k> move-line conflict) ──
+      { mode = "n"; key = "<A-Left>";  action.__raw = "function() require('smart-splits').resize_left() end"; options.desc = "Resize left"; }
+      { mode = "n"; key = "<A-Down>";  action.__raw = "function() require('smart-splits').resize_down() end"; options.desc = "Resize down"; }
+      { mode = "n"; key = "<A-Up>";    action.__raw = "function() require('smart-splits').resize_up() end"; options.desc = "Resize up"; }
+      { mode = "n"; key = "<A-Right>"; action.__raw = "function() require('smart-splits').resize_right() end"; options.desc = "Resize right"; }
     ];
 
     # ── Performance ───────────────────────────────────────────────────────
