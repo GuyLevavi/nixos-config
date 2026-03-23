@@ -62,8 +62,9 @@
           gitsigns               = true;
           neotree                = true;
           treesitter             = true;
-          telescope.enabled      = true;
-          indent_blankline.enabled = true;
+          telescope.enabled        = true;
+          indent_blankline.enabled = false;
+          snacks.enabled           = true;
           flash                  = true;
           which_key              = true;
           noice                  = true;
@@ -251,7 +252,6 @@
         };
       };
       diffview.enable = true;
-      fugitive.enable = true;
 
       # ── File explorer ────────────────────────────────────────────────
       neo-tree = {
@@ -293,13 +293,6 @@
         };
       };
 
-      indent-blankline = {
-        enable = true;
-        settings = {
-          indent.char    = "│";
-          scope.enabled  = true;
-        };
-      };
 
       noice = {
         enable = true;
@@ -337,7 +330,6 @@
             { __unkeyed-1 = "<leader>s"; group = "Search"; }
             { __unkeyed-1 = "<leader>u"; group = "UI"; }
             { __unkeyed-1 = "<leader>q"; group = "Quit/Session"; }
-            { __unkeyed-1 = "<leader>S"; group = "Spectre"; }
           ];
         };
       };
@@ -349,56 +341,6 @@
         enable = true;
         settings.options = [ "buffers" "curdir" "tabpages" "winsize" "skiprtp" ];
       };
-
-      # ── Dashboard — startup screen ────────────────────────────────────
-      dashboard = {
-        enable = true;
-        settings = {
-          theme = "doom";
-          config = {
-            header = [
-              ""
-              "  ███╗   ██╗██╗██╗  ██╗██╗   ██╗██╗███╗   ███╗"
-              "  ████╗  ██║██║╚██╗██╔╝██║   ██║██║████╗ ████║"
-              "  ██╔██╗ ██║██║ ╚███╔╝ ██║   ██║██║██╔████╔██║"
-              "  ██║╚██╗██║██║ ██╔██╗ ╚██╗ ██╔╝██║██║╚██╔╝██║"
-              "  ██║ ╚████║██║██╔╝ ██╗ ╚████╔╝ ██║██║ ╚═╝ ██║"
-              "  ╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝     ╚═╝"
-              ""
-            ];
-            shortcut = [
-              { desc = "  Find File";    group = "Label"; action = "Telescope find_files";            key = "f"; }
-              { desc = "  Recent Files"; group = "Label"; action = "Telescope oldfiles";              key = "r"; }
-              { desc = "  Grep";         group = "Label"; action = "Telescope live_grep";             key = "/"; }
-              { desc = "  Session";      group = "Label"; action.__raw = "require('persistence').load"; key = "s"; }
-              { desc = "  Quit";         group = "Label"; action = "qa";                              key = "q"; }
-            ];
-            footer.__raw = ''
-              function()
-                local v = vim.version()
-                return { "⚡ Neovim v" .. v.major .. "." .. v.minor .. "." .. v.patch }
-              end
-            '';
-          };
-        };
-      };
-
-      # ── Illuminate — highlight word under cursor ──────────────────────
-      # Uses LSP references + treesitter to highlight all occurrences of the
-      # word under the cursor. Much smarter than dumb string matching.
-      illuminate = {
-        enable = true;
-        settings = {
-          providers = [ "lsp" "treesitter" "regex" ];
-          delay     = 200;
-          under_cursor = true;
-        };
-      };
-
-      # ── Spectre — project-wide find & replace ─────────────────────────
-      # Panel-based search/replace across the entire project with regex support.
-      # <leader>sr = open spectre; <leader>sw = search word under cursor
-      spectre.enable = true;
 
       # ── Editing ─────────────────────────────────────────────────────
       todo-comments.enable  = true;
@@ -436,18 +378,6 @@
       { mode = "n"; key = "<leader>-"; action = "<cmd>split<cr>"; options.desc = "Split horizontal"; }
       { mode = "n"; key = "<leader>|"; action = "<cmd>vsplit<cr>"; options.desc = "Split vertical"; }
 
-      # ── Window navigation (Ctrl+hjkl) ────────────────────────────────
-      { mode = "n"; key = "<C-h>"; action = "<C-w>h"; options.desc = "Window left"; }
-      { mode = "n"; key = "<C-l>"; action = "<C-w>l"; options.desc = "Window right"; }
-      { mode = "n"; key = "<C-j>"; action = "<C-w>j"; options.desc = "Window down"; }
-      { mode = "n"; key = "<C-k>"; action = "<C-w>k"; options.desc = "Window up"; }
-
-      # ── Window resize (Ctrl+arrows) ──────────────────────────────────
-      { mode = "n"; key = "<C-Up>"; action = "<cmd>resize +2<cr>"; options.desc = "Increase height"; }
-      { mode = "n"; key = "<C-Down>"; action = "<cmd>resize -2<cr>"; options.desc = "Decrease height"; }
-      { mode = "n"; key = "<C-Left>"; action = "<cmd>vertical resize -2<cr>"; options.desc = "Decrease width"; }
-      { mode = "n"; key = "<C-Right>"; action = "<cmd>vertical resize +2<cr>"; options.desc = "Increase width"; }
-
       # ── Buffer navigation ────────────────────────────────────────────
       { mode = "n"; key = "<S-h>"; action = "<cmd>bprevious<cr>"; options.desc = "Prev buffer"; }
       { mode = "n"; key = "<S-l>"; action = "<cmd>bnext<cr>"; options.desc = "Next buffer"; }
@@ -464,7 +394,7 @@
       { mode = "n"; key = "<leader>fn"; action = "<cmd>enew<cr>"; options.desc = "New file"; }
       { mode = "n"; key = "<leader>sk"; action = "<cmd>Telescope keymaps<cr>"; options.desc = "Keymaps"; }
       { mode = "n"; key = "<leader>sm"; action = "<cmd>Telescope marks<cr>"; options.desc = "Marks"; }
-      { mode = "n"; key = "<leader>sr"; action = "<cmd>Telescope resume<cr>"; options.desc = "Resume search"; }
+      { mode = "n"; key = "<leader>sR"; action = "<cmd>Telescope resume<cr>"; options.desc = "Resume search"; }
 
       # ── UI toggles ──────────────────────────────────────────────────
       { mode = "n"; key = "<leader>ur"; action = "<cmd>nohlsearch<Bar>diffupdate<Bar>normal! <C-L><cr>"; options.desc = "Redraw / clear"; }
@@ -514,11 +444,6 @@
       { mode = "n"; key = "<leader>qS"; action.__raw = "function() require('persistence').select() end"; options.desc = "Select session"; }
       { mode = "n"; key = "<leader>ql"; action.__raw = "function() require('persistence').load({ last = true }) end"; options.desc = "Restore last session"; }
       { mode = "n"; key = "<leader>qd"; action.__raw = "function() require('persistence').stop() end"; options.desc = "Don't save session"; }
-
-      # ── Spectre — find & replace ─────────────────────────────────────
-      { mode = "n"; key = "<leader>sr"; action.__raw = "function() require('spectre').open() end"; options.desc = "Find & Replace (Spectre)"; }
-      { mode = "n"; key = "<leader>sw"; action.__raw = "function() require('spectre').open_visual({select_word=true}) end"; options.desc = "Search word (Spectre)"; }
-      { mode = "v"; key = "<leader>sw"; action.__raw = "function() require('spectre').open_visual() end"; options.desc = "Search selection (Spectre)"; }
 
       # ── Buffer delete (mini.bufremove) ───────────────────────────────
       { mode = "n"; key = "<leader>bd"; action.__raw = "function() require('mini.bufremove').delete() end"; options.desc = "Delete buffer"; }
