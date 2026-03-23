@@ -444,6 +444,31 @@
           animate.enabled   = false;
         };
       };
+
+      # ── Render Markdown — inline markdown rendering ───────────────────────
+      # Renders .md files with styled headers, bold, code blocks, tables.
+      # Toggle with <leader>um. Auto-enables on markdown filetype.
+      render-markdown = {
+        enable = true;
+        settings = {
+          file_types   = [ "markdown" ];
+          render_modes = [ "n" "c" "t" ];
+          heading = {
+            enabled = true;
+            icons   = [ "󰲡 " "󰲣 " "󰲥 " "󰲧 " "󰲩 " "󰲫 " ];
+          };
+          code = {
+            enabled = true;
+            sign    = false;
+            style   = "full";
+            border  = "thin";
+          };
+          bullet = {
+            enabled = true;
+            icons   = [ "●" "○" "◆" "◇" ];
+          };
+        };
+      };
     };
 
     # ── Keymaps (LazyVim-compatible defaults) ────────────────────────────
@@ -556,6 +581,9 @@
       # ── Aerial ────────────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>lo"; action = "<cmd>AerialToggle<cr>"; options.desc = "Toggle outline"; }
       { mode = "n"; key = "<leader>ls"; action = "<cmd>Telescope aerial<cr>"; options.desc = "Symbol search"; }
+
+      # ── Render Markdown ───────────────────────────────────────────────────
+      { mode = "n"; key = "<leader>um"; action = "<cmd>RenderMarkdown toggle<cr>"; options.desc = "Toggle markdown render"; }
 
       # ── Smart Splits — navigate (tmux-aware) ─────────────────────────────
       { mode = "n"; key = "<C-h>"; action.__raw = "function() require('smart-splits').move_cursor_left() end"; options.desc = "Window left"; }
