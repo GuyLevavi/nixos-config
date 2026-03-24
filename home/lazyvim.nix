@@ -10,43 +10,50 @@
     # ripgrep, fd, lazygit are already in home.packages — don't double-install
     installCoreDependencies = false;
 
-    # ── Formatters / tools on PATH for conform + LSP ──────────────────────
+    # ── LSP server binaries + formatters on PATH ──────────────────────────
+    # extras.lang.* configures plugin specs but does NOT install binaries.
+    # Every LSP server binary must be listed here explicitly.
     extraPackages = with pkgs; [
-      # Lua / Nix
-      stylua
-      nixpkgs-fmt
-      nix-doc              # hover docs for Nix builtins
+      # ── LSP servers ───────────────────────────────────────────────────
+      basedpyright                          # Python (hover, types, go-to-def)
+      nixd                                  # Nix (flake-aware)
+      lua-language-server                   # Lua (LazyVim core config files)
+      marksman                              # Markdown (cross-file links)
+      yaml-language-server                  # YAML (kubernetes schemas etc.)
+      nodePackages.vscode-langservers-extracted  # JSON + HTML + CSS (jsonls)
+      nodePackages.typescript-language-server   # TypeScript / JavaScript
+      taplo                                 # TOML (pyproject.toml, Cargo.toml)
+      helm-ls                               # Helm charts
+      bash-language-server                  # Bash / Shell
+      dockerfile-language-server             # Docker (dockerls)
+      docker-compose-language-service       # docker-compose files
+      clang-tools                           # C/C++ (clangd + clang-format)
 
-      # Python
-      ruff
-      black
-      python3Packages.debugpy
+      # ── Formatters ────────────────────────────────────────────────────
+      stylua                                # Lua
+      nixpkgs-fmt                           # Nix
+      nix-doc                               # hover docs for Nix builtins
+      ruff                                  # Python linter + formatter
+      black                                 # Python formatter
+      nodePackages.prettier                 # JS/TS/JSON/YAML/Markdown
+      shfmt                                 # Shell
 
-      # JS / TS / YAML / JSON / Markdown
-      nodePackages.prettier
-
-      # Shell (no lang.bash extra exists — provide tool directly)
-      shfmt
-
-      # C / C++
-      clang-tools          # provides clangd + clang-format
+      # ── Debug adapters ────────────────────────────────────────────────
+      python3Packages.debugpy               # Python DAP adapter
     ];
 
-    # ── Language extras (lazyvim-nix built-in extra system) ───────────────
-    # Use unquoted dot-notation. Only extras confirmed in lazyvim-nix are listed.
-    # If a build error says "attribute 'X' missing", comment it out and add
-    # the relevant tool to extraPackages instead.
+    # ── Language extras (configures plugin specs + Mason disable) ─────────
     extras = {
-      lang.python.enable     = true;   # basedpyright + ruff
-      lang.nix.enable        = true;   # nixd
-      lang.markdown.enable   = true;   # marksman
-      lang.docker.enable     = true;   # dockerls + docker-compose-language-service
-      lang.yaml.enable       = true;   # yamlls
-      lang.json.enable       = true;   # jsonls
-      lang.typescript.enable = true;   # tsserver
-      lang.toml.enable       = true;   # taplo
-      lang.clangd.enable     = true;   # clangd (C/C++)
-      lang.helm.enable       = true;   # helm-ls
+      lang.python.enable     = true;
+      lang.nix.enable        = true;
+      lang.markdown.enable   = true;
+      lang.docker.enable     = true;
+      lang.yaml.enable       = true;
+      lang.json.enable       = true;
+      lang.typescript.enable = true;
+      lang.toml.enable       = true;
+      lang.clangd.enable     = true;
+      lang.helm.enable       = true;
     };
 
     # ── Treesitter parsers (baked in at build time) ────────────────────────
