@@ -15,13 +15,13 @@
     # Every LSP server binary must be listed here explicitly.
     extraPackages = with pkgs; [
       # ── LSP servers ───────────────────────────────────────────────────
-      basedpyright                          # Python (hover, types, go-to-def)
-      nixd                                  # Nix (flake-aware)
+      pyright                               # Python (pyright-langserver — lang.python extra)
+      nil                                   # Nix (nil binary — lang.nix extra uses nil_ls)
       lua-language-server                   # Lua (LazyVim core config files)
       marksman                              # Markdown (cross-file links)
       yaml-language-server                  # YAML (kubernetes schemas etc.)
       nodePackages.vscode-langservers-extracted  # JSON + HTML + CSS (jsonls)
-      nodePackages.typescript-language-server   # TypeScript / JavaScript
+      vtsls                                 # TypeScript / JavaScript (lang.typescript extra)
       taplo                                 # TOML (pyproject.toml, Cargo.toml)
       helm-ls                               # Helm charts
       bash-language-server                  # Bash / Shell
@@ -62,6 +62,26 @@
       markdown markdown_inline nix python query rust toml tsx
       typescript vim vimdoc yaml
     ];
+
+    # ── Disable ruff hover: pyright provides better type/docstring hover ─────
+    # ruff hover only shows lint rule descriptions; pyright handles K properly.
+    plugins.ruff-hover-fix = ''
+      return {
+        {
+          "neovim/nvim-lspconfig",
+          init = function()
+            vim.api.nvim_create_autocmd("LspAttach", {
+              callback = function(args)
+                local client = vim.lsp.get_client_by_id(args.data.client_id)
+                if client and client.name == "ruff" then
+                  client.server_capabilities.hoverProvider = false
+                end
+              end,
+            })
+          end,
+        },
+      }
+    '';
 
     # ── Catppuccin theme (not available as an extra — use plugin spec) ─────
     plugins.colorscheme = ''

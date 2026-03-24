@@ -351,6 +351,7 @@
     lazydocker
 
     # Python tooling
+    python3    # default system Python; uv manages multi-version venvs
     uv         # fast Python package/venv manager (replaces pip + pyenv + venv)
 
     # Terminal utilities
