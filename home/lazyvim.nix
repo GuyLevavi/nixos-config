@@ -39,7 +39,23 @@
       shfmt                                 # Shell
 
       # ── Debug adapters ────────────────────────────────────────────────
-      python3Packages.debugpy               # Python DAP adapter
+      python3Packages.debugpy               # Python DAP adapter (dap.core extra)
+
+      # ── Jupyter / molten-nvim Python runtime ──────────────────────────
+      # molten-nvim communicates with Jupyter kernels via these packages.
+      # pynvim: Python provider for Neovim RPC.
+      # jupyter-client + ipykernel: kernel protocol + Python kernel.
+      # cairosvg + pillow: SVG/image rendering for inline plot output.
+      # nbformat: notebook file format (needed for .ipynb open/save).
+      python3Packages.pynvim
+      python3Packages.jupyter-client
+      python3Packages.ipykernel
+      python3Packages.cairosvg
+      python3Packages.pillow
+      python3Packages.nbformat
+
+      # ── Image rendering (image.nvim backend) ──────────────────────────
+      imagemagick                           # image.nvim uses magick for conversion
     ];
 
     # ── Language extras (configures plugin specs + Mason disable) ─────────
@@ -54,6 +70,11 @@
       lang.toml.enable       = true;
       lang.clangd.enable     = true;
       lang.helm.enable       = true;
+
+      # ── DAP + test: activate nvim-dap and neotest (lang.python uses both
+      # as optional dependencies — they only load when these extras are on) ─
+      dap.core.enable  = true;
+      test.core.enable = true;
     };
 
     # ── Treesitter parsers (baked in at build time) ────────────────────────
@@ -79,6 +100,98 @@
               end,
             })
           end,
+        },
+      }
+    '';
+
+    # ── iron.nvim — REPL (send code to a live Python/shell interpreter) ───
+    # <leader>rs = start REPL   <leader>rc = send motion/visual
+    # <leader>rl = send line    <leader>rf = send file   <leader>rq = quit
+    plugins.iron = ''
+      return {
+        {
+          "Vigemus/iron.nvim",
+          opts = {
+            config = {
+              repl_definition = {
+                python = { command = { "python3" } },
+              },
+              repl_open_cmd = "belowright 15 split",
+            },
+            keymaps = {
+              send_motion  = "<leader>rc",
+              visual_send  = "<leader>rc",
+              send_file    = "<leader>rf",
+              send_line    = "<leader>rl",
+              cr           = "<leader>r<cr>",
+              interrupt    = "<leader>r<space>",
+              exit         = "<leader>rq",
+              clear        = "<leader>rx",
+            },
+            highlight = { italic = true },
+          },
+          keys = {
+            { "<leader>rs", "<cmd>IronRepl<cr>",    desc = "Start REPL" },
+            { "<leader>rr", "<cmd>IronRestart<cr>", desc = "Restart REPL" },
+            { "<leader>rh", "<cmd>IronHide<cr>",    desc = "Hide REPL" },
+          },
+        },
+      }
+    '';
+
+    # ── image.nvim — inline image rendering via Kitty protocol ────────────
+    # Required by molten-nvim for plot output. Uses Kitty's image protocol
+    # (already enabled via use_kitty_protocol in nushell config).
+    plugins.image = ''
+      return {
+        {
+          "3rd/image.nvim",
+          opts = {
+            backend = "kitty",
+            integrations = {
+              markdown = { enabled = true, clear_in_insert_mode = false },
+            },
+            max_width  = 100,
+            max_height = 12,
+            max_height_window_percentage = math.huge,
+            max_width_window_percentage  = math.huge,
+            window_overlap_clear_enabled = true,
+            window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
+          },
+        },
+      }
+    '';
+
+    # ── molten-nvim — Jupyter kernel inside Neovim ────────────────────────
+    # Run `:MoltenInit` to attach a kernel. Outputs (including plots) render
+    # inline via image.nvim + Kitty. Works with any ipykernel-compatible kernel.
+    # <leader>mi = init kernel    <leader>me = eval operator
+    # <leader>ml = eval line      <leader>mv = eval visual
+    # <leader>mo = show output    <leader>md = delete cell
+    plugins.molten = ''
+      return {
+        {
+          "benlubas/molten-nvim",
+          dependencies = { "3rd/image.nvim" },
+          build = ":UpdateRemotePlugins",
+          opts = {
+            image_provider        = "image.nvim",
+            auto_open_output      = false,
+            virt_lines_off_by_1   = true,
+            wrap_output           = false,
+            output_win_max_height = 20,
+          },
+          keys = {
+            { "<leader>mi", "<cmd>MoltenInit<cr>",                 desc = "Init kernel" },
+            { "<leader>me", "<cmd>MoltenEvaluateOperator<cr>",     desc = "Eval operator", expr = true },
+            { "<leader>ml", "<cmd>MoltenEvaluateLine<cr>",         desc = "Eval line" },
+            { "<leader>mv", "<cmd>MoltenEvaluateVisual<cr>",       desc = "Eval visual",   mode = "v" },
+            { "<leader>mr", "<cmd>MoltenReevaluateCell<cr>",       desc = "Re-eval cell" },
+            { "<leader>md", "<cmd>MoltenDelete<cr>",               desc = "Delete cell" },
+            { "<leader>mo", "<cmd>MoltenShowOutput<cr>",           desc = "Show output" },
+            { "<leader>mh", "<cmd>MoltenHideOutput<cr>",           desc = "Hide output" },
+            { "<leader>mx", "<cmd>MoltenInterrupt<cr>",            desc = "Interrupt kernel" },
+          },
         },
       }
     '';

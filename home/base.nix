@@ -353,6 +353,7 @@
     # Python tooling
     python3    # default system Python; uv manages multi-version venvs
     uv         # fast Python package/venv manager (replaces pip + pyenv + venv)
+    # marimo: broken in nixpkgs unstable (0.19.4 patch conflict) — install via uv: uv tool install marimo
 
     # Terminal utilities
     yazi       # terminal file manager
