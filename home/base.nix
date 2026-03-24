@@ -4,7 +4,7 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports = [ ./nixvim.nix ];
+  imports = [ ./lazyvim.nix ];
   home.username    = "gl";
   home.homeDirectory = "/home/gl";
   home.stateVersion  = "25.05"; # DO NOT change after install
@@ -22,7 +22,6 @@
   catppuccin.bat.enable      = true;
   catppuccin.btop.enable     = true;
   catppuccin.nushell.enable  = true;
-  catppuccin.nvim.enable     = false;  # NixVim uses its own catppuccin module
   catppuccin.opencode.enable = true;
   catppuccin.delta.enable    = true;   # git diff pager
   catppuccin.atuin.enable    = true;   # shell history search
