@@ -145,10 +145,11 @@
     '';
   };
 
-  # ── Neovim — configured via NixVim in home/nixvim.nix ────────────────
-  # All plugins, LSP servers, formatters, and treesitter grammars are
-  # pre-fetched by Nix at build time. No lazy.nvim, no Mason, no runtime
-  # downloads. See home/nixvim.nix for the full config.
+  # ── Neovim — configured via lazyvim-nix in home/lazyvim.nix ─────────
+  # LazyVim distribution via lazyvim-nix flake. All plugins, LSP tools,
+  # and treesitter parsers are pre-fetched by Nix at build time.
+  # No Mason, no runtime downloads. See home/lazyvim.nix for the config.
+  catppuccin.nvim.enable = false;  # lazyvim.nix manages catppuccin via plugins.colorscheme
 
   # ── Git ───────────────────────────────────────────────────────────────
   # delta.enable adds delta as the pager; catppuccin.delta themes it.
