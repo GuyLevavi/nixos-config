@@ -111,6 +111,7 @@
       return {
         {
           "Vigemus/iron.nvim",
+          dir = "${pkgs.vimPlugins.iron-nvim}",
           opts = {
             config = {
               repl_definition = {
@@ -146,6 +147,7 @@
       return {
         {
           "3rd/image.nvim",
+          dir = "${pkgs.vimPlugins.image-nvim}",
           build = false,  -- nixpkgs pre-compiles the Lua binding; skip luarocks/hererocks
           opts = {
             backend = "kitty",
@@ -173,6 +175,7 @@
       return {
         {
           "benlubas/molten-nvim",
+          dir = "${pkgs.vimPlugins.molten-nvim}",
           dependencies = { "3rd/image.nvim" },
           build = ":UpdateRemotePlugins",  -- registers Python rplugin; harmless if already done
           opts = {
