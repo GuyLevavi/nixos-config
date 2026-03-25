@@ -4,7 +4,7 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports = [ ./nixvim.nix ];
+  imports = [ ./lazyvim.nix ];
   home.username    = "gl";
   home.homeDirectory = "/home/gl";
   home.stateVersion  = "25.05"; # DO NOT change after install
@@ -22,7 +22,6 @@
   catppuccin.bat.enable      = true;
   catppuccin.btop.enable     = true;
   catppuccin.nushell.enable  = true;
-  catppuccin.nvim.enable     = false;  # NixVim uses its own catppuccin module
   catppuccin.opencode.enable = true;
   catppuccin.delta.enable    = true;   # git diff pager
   catppuccin.atuin.enable    = true;   # shell history search
@@ -148,10 +147,11 @@
     '';
   };
 
-  # ── Neovim — configured via NixVim in home/nixvim.nix ────────────────
-  # All plugins, LSP servers, formatters, and treesitter grammars are
-  # pre-fetched by Nix at build time. No lazy.nvim, no Mason, no runtime
-  # downloads. See home/nixvim.nix for the full config.
+  # ── Neovim — configured via lazyvim-nix in home/lazyvim.nix ─────────
+  # LazyVim distribution via lazyvim-nix flake. All plugins, LSP tools,
+  # and treesitter parsers are pre-fetched by Nix at build time.
+  # No Mason, no runtime downloads. See home/lazyvim.nix for the config.
+  catppuccin.nvim.enable = false;  # lazyvim.nix manages catppuccin via plugins.colorscheme
 
   # ── Git ───────────────────────────────────────────────────────────────
   # delta.enable adds delta as the pager; catppuccin.delta themes it.
@@ -362,6 +362,7 @@
     # Python tooling — uv manages interpreter versions (uv python install 3.x)
     python3    # default system Python; uv handles multi-version venvs
     uv         # fast Python package/venv manager (replaces pip + pyenv + venv)
+    # marimo: broken in nixpkgs unstable (0.19.4 patch conflict) — install via uv: uv tool install marimo
 
     # Terminal utilities
     yazi       # terminal file manager

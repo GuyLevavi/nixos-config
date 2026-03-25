@@ -16,18 +16,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixvim = {
-      url = "github:nix-community/nixvim";
+    lazyvim-nix = {
+      url = "github:pfassina/lazyvim-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, catppuccin, nixvim, ... }:
+  outputs = { self, nixpkgs, home-manager, catppuccin, lazyvim-nix, ... }:
   let
     # Shared home-manager modules used by all configurations.
     commonHomeModules = [
       catppuccin.homeModules.catppuccin
-      nixvim.homeModules.nixvim
+      lazyvim-nix.homeManagerModules.default
     ];
   in {
     nixosConfigurations = {
