@@ -46,9 +46,20 @@
     envFile.text = ''
       $env.EDITOR = "nvim"
       $env.VISUAL = "nvim"
-      $env.DOCKER_HOST = $"unix://($env.XDG_RUNTIME_DIR)/podman/podman.sock"
+      # XDG_RUNTIME_DIR only exists under systemd/logind (nixbox). Guard it so
+      # nushell starts cleanly in containers and WSL without a systemd session.
+      if "XDG_RUNTIME_DIR" in $env {
+        $env.DOCKER_HOST = $"unix://($env.XDG_RUNTIME_DIR)/podman/podman.sock"
+      }
       # Prevent uv from downloading Python binaries (FHS binaries don't run on NixOS)
       $env.UV_PYTHON_DOWNLOADS = "never"
+      # Prepend nix profile bin dirs so tools (zoxide, starship, etc.) are on PATH
+      # when nushell is launched directly (containers, WSL) without a bash login shell.
+      $env.PATH = (
+        [$"($env.HOME)/.nix-profile/bin" "/nix/var/nix/profiles/default/bin"]
+        | append ($env.PATH | split row (char esep))
+        | uniq
+      )
 
       # Vi mode indicators — starship does NOT support vi mode for nushell
       # (starship#4897). Use nushell's native closures instead.
