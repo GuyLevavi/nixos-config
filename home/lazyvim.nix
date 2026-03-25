@@ -146,6 +146,7 @@
       return {
         {
           "3rd/image.nvim",
+          build = false,  -- nixpkgs pre-compiles the Lua binding; skip luarocks/hererocks
           opts = {
             backend = "kitty",
             integrations = {
@@ -173,7 +174,7 @@
         {
           "benlubas/molten-nvim",
           dependencies = { "3rd/image.nvim" },
-          build = ":UpdateRemotePlugins",
+          build = ":UpdateRemotePlugins",  -- registers Python rplugin; harmless if already done
           opts = {
             image_provider        = "image.nvim",
             auto_open_output      = false,
