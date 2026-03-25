@@ -48,6 +48,8 @@
       $env.EDITOR = "nvim"
       $env.VISUAL = "nvim"
       $env.DOCKER_HOST = $"unix://($env.XDG_RUNTIME_DIR)/podman/podman.sock"
+      # Prevent uv from downloading Python binaries (FHS binaries don't run on NixOS)
+      $env.UV_PYTHON_DOWNLOADS = "never"
 
       # Vi mode indicators — starship does NOT support vi mode for nushell
       # (starship#4897). Use nushell's native closures instead.
@@ -275,9 +277,16 @@
       # True color passthrough
       set -as terminal-features ",*:RGB"
 
-      # Copy mode vi bindings
-      bind -T copy-mode-vi v send -X begin-selection
-      bind -T copy-mode-vi y send -X copy-selection-and-cancel
+      # Renumber windows sequentially when one is closed
+      set -g renumber-windows on
+
+      # Copy mode vi bindings (mode-keys vi is set via keyMode above)
+      # Explicit set here in case any plugin resets it:
+      set -g mode-keys vi
+      bind -T copy-mode-vi v   send -X begin-selection
+      bind -T copy-mode-vi V   send -X select-line
+      bind -T copy-mode-vi y   send -X copy-selection-and-cancel
+      bind -T copy-mode-vi Escape send -X cancel
 
       # Pane splits — open in current path
       bind | split-window -h -c "#{pane_current_path}"
@@ -350,7 +359,8 @@
     podman-compose
     lazydocker
 
-    # Python tooling
+    # Python tooling — uv manages interpreter versions (uv python install 3.x)
+    python3    # default system Python; uv handles multi-version venvs
     uv         # fast Python package/venv manager (replaces pip + pyenv + venv)
 
     # Terminal utilities
@@ -362,7 +372,7 @@
 
     # Kubernetes
     k9s        # Kubernetes TUI
-    helm       # Kubernetes package manager
+    kubernetes-helm  # Kubernetes package manager (pkgs.helm is a music synth)
 
     # Dev TUIs
     posting    # HTTP client TUI (wraps httpx)
