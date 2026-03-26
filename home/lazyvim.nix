@@ -209,4 +209,23 @@
       }
     '';
   };
+
+  # ── Airgap: pre-install lazy.nvim at the bootstrap location ──────────────
+  # LazyVim's init.lua checks vim.fn.stdpath("data") .. "/lazy/lazy.nvim" and
+  # clones from GitHub if absent. Pre-link the nix store copy so no network
+  # access is needed on first launch.
+  xdg.dataFile."nvim/lazy/lazy.nvim".source = pkgs.vimPlugins.lazy-nvim;
+
+  # ── Python3 provider — packages importable by nvim's python3 host ────────
+  # programs.lazyvim.extraPackages only adds to PATH; for `import jupyter_client`
+  # etc. inside neovim (molten-nvim, python provider RPC), they must be here too.
+  programs.neovim.extraPython3Packages = ps: with ps; [
+    pynvim
+    jupyter-client
+    ipykernel
+    cairosvg
+    pillow
+    nbformat
+    debugpy
+  ];
 }
