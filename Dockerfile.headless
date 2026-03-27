@@ -45,6 +45,9 @@ RUN rm -f /home/gl/.profile /home/gl/.bashrc /home/gl/.bash_logout
 RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
     && nix run nixpkgs#home-manager -- switch --flake /home/gl/nixos-config#wsl
 
+# ── Smoke test — fails the build if any expected binary is missing ────
+RUN bash /home/gl/nixos-config/scripts/test-smoke.sh
+
 # ── Runtime ───────────────────────────────────────────────────────────
 # Mount SSH keys: podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
 CMD ["/home/gl/.nix-profile/bin/nu"]

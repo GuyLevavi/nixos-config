@@ -60,5 +60,10 @@ RUN rm -f /home/gl/.profile /home/gl/.bashrc /home/gl/.bash_logout
 RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
     && ${ACTIVATION_STORE_PATH}/activate
 
+# ── Smoke test — fails the build if any expected binary is missing ────
+# Scripts are copied separately so the airgap image has them available.
+COPY --chown=gl:gl scripts/ /home/gl/scripts/
+RUN bash /home/gl/scripts/test-smoke.sh --airgap
+
 # ── Runtime ───────────────────────────────────────────────────────────
 CMD ["/home/gl/.nix-profile/bin/nu"]

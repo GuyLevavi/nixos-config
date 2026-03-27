@@ -13,6 +13,12 @@ home/
               #           lazygit, ripgrep, fd, bat, eza, btop, dust, sd, procs,
               #           podman-compose, lazydocker, uv, yazi, tmux, glow, lnav,
               #           fastfetch, k9s, helm, posting, opencode
+  airgap.nix  # offline delta on top of base.nix:
+              #   - autoupdate=false for opencode/atuin
+              #   - work tools: glab, jfrog-cli, oc (openshift), mc (minio-client), git-lfs
+              #   - credential manager: pass + gnupg + pass-git-helper (GPG-encrypted vault)
+              #   - git credential.helper = pass-git-helper
+              #   - glab update check disabled
   gui.nix     # imports base.nix + Hyprland, Waybar, Kitty, Wofi, Mako,
               #           browsers, thunar, screenshotting, swww, hyprlock,
               #           keepassxc, gtk, cursor theme
@@ -47,7 +53,7 @@ curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
 
 # 2. Enable flakes
 mkdir -p ~/.config/nix
-echo 'experimental-features = nix-flakes nix-command' >> ~/.config/nix/nix.conf
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 
 # 3. Clone config and apply
 git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config
@@ -88,7 +94,7 @@ ENV PATH=/home/gl/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
 
 # Enable flakes
 RUN mkdir -p ~/.config/nix && \
-    echo 'experimental-features = nix-flakes nix-command' >> ~/.config/nix/nix.conf
+    echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 
 # Copy config into container
 COPY --chown=gl:gl . /home/gl/nixos-config
@@ -107,6 +113,20 @@ docker build -f Dockerfile.dev -t dev .
 docker run -it -v ~/.ssh:/home/gl/.ssh:ro dev
 ```
 
+### Smoke testing
+
+`scripts/test-smoke.sh` runs automatically inside both Docker builds and fails the build on any missing binary. Run it manually against a running container:
+
+```bash
+# WSL / headless image
+podman run --rm dev-headless bash ~/nixos-config/scripts/test-smoke.sh
+
+# Airgap image (includes work-tool checks)
+podman run --rm dev-airgap bash ~/scripts/test-smoke.sh --airgap
+```
+
+The `--airgap` flag adds checks for: `glab`, `jf` (jfrog-cli), `oc`, `mc`, `git-lfs`, `gpg`, `pass`, `pass-git-helper`, `pinentry-tty`, git `credential.helper`, and the glab update-check config.
+
 ### RunAI CLI
 
 Will be installed inside airgapped env, from the internal net specific RunAI instance.
@@ -120,9 +140,9 @@ Will be installed inside airgapped env, from the internal net specific RunAI ins
 Requires Nix already installed on the airgapped target (one-time USB bootstrap).
 
 ```bash
-# On connected machine: build and export
-nix build .#homeConfigurations.wsl.activationPackage
-nix copy --to file:///media/usb/nix-store .#homeConfigurations.wsl.activationPackage
+# On connected machine: build and export (use airgap profile, not wsl)
+nix build .#homeConfigurations.airgap.activationPackage
+nix copy --to file:///media/usb/nix-store .#homeConfigurations.airgap.activationPackage
 
 # On airgapped machine: import and activate
 nix copy --from file:///media/usb/nix-store /nix/store/<hash>-home-manager-generation
@@ -132,14 +152,47 @@ nix copy --from file:///media/usb/nix-store /nix/store/<hash>-home-manager-gener
 ### Option B: Docker with pre-baked store (airgapped)
 
 ```bash
-# On connected machine: build store closure into image
-docker build -f Dockerfile.dev -t dev-connected .
-docker save dev-connected | gzip > dev-connected.tar.gz
+# On connected machine: build closure + airgap image
+./scripts/build-airgap-closure.sh   # outputs airgap-artifacts/
+podman build -f Dockerfile.airgap \
+  --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
+  -t dev-airgap .
+# Build runs test-smoke.sh --airgap automatically — a failed build = broken image.
+
+podman save dev-airgap | gzip > dev-airgap.tar.gz
 
 # Transfer to airgapped machine (USB / sneakernet)
-docker load < dev-connected.tar.gz
-docker run -it -v ~/.ssh:/home/gl/.ssh:ro dev-connected
+podman load < dev-airgap.tar.gz
+podman run -it dev-airgap
 ```
+
+### Credential setup (airgap only)
+
+The `airgap` profile ships `pass` + `pass-git-helper` as the git credential helper.
+One-time setup after first activation:
+
+```bash
+# 1. Generate a GPG key (or import existing key from USB)
+gpg --gen-key
+
+# 2. Initialise the password store
+pass init <gpg-key-id>
+
+# 3. Store git token(s)
+pass insert work/gitlab      # line 1: username, line 2: token
+
+# 4. Tell pass-git-helper which entry maps to which host
+mkdir -p ~/.config/pass-git-helper
+cat > ~/.config/pass-git-helper/git-pass-mapping.ini << 'EOF'
+[gitlab.company.com]
+target=work/gitlab
+EOF
+
+# 5. In Docker (no systemd) — start gpg-agent manually
+eval $(gpg-agent --daemon --pinentry-program $(which pinentry-tty))
+```
+
+After this, `git clone https://gitlab.company.com/...` will silently use the stored token.
 
 ### Option C: self-extracting bundle (no Nix required on target)
 
@@ -162,5 +215,6 @@ Less composable — updates require re-bundling the full archive.
 | Python formatter | ruff (+ black kept) | ruff covers lint+format; black kept for projects that require it |
 | Git diffs | delta (programs.delta.enable) | syntax-highlighted diffs; catppuccin.delta themes it |
 | Terminal multiplexer | tmux | essential for persistent sessions over SSH/WSL |
-| Git credentials headless | empty helper (SSH keys or prompt) | keepassxc requires a running GUI; base.nix avoids the assumption |
+| Git credentials headless (wsl) | empty helper (SSH keys or prompt) | keepassxc requires a running GUI; base.nix avoids the assumption |
+| Git credentials airgap | pass-git-helper (GPG-backed pass store) | fully offline, no GUI needed; configured in airgap.nix |
 | Git credentials GUI | keepassxc (lib.mkForce in gui.nix) | overrides the empty helper from base.nix |

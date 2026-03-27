@@ -19,7 +19,7 @@ home/
   base.nix                   # headless config — shell, neovim, git, tmux, CLI tools
   gui.nix                    # Hyprland/Wayland GUI — imports base.nix
   nixvim.nix                 # NixVim config (all plugins, LSPs, formatters baked in by Nix)
-  airgap.nix                 # offline overrides — autoupdate=false, no network plugins
+  airgap.nix                 # offline delta — autoupdate=false, work tools (glab/jfrog/oc/mc), pass credentials
 home.nix                     # thin wrapper → imports gui.nix (nixbox desktop)
 hosts/nixbox/
   configuration.nix          # system config — boot, hardware, services, Hyprland, fonts

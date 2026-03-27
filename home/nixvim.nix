@@ -62,7 +62,7 @@
         integrations = {
           blink_cmp              = true;
           gitsigns               = true;
-          neotree                = true;
+          neotree                = false;
           treesitter             = true;
           telescope.enabled        = true;
           indent_blankline.enabled = false;
@@ -278,30 +278,7 @@
           current_line_blame = false;
         };
       };
-      neogit = {
-        enable = true;
-        settings = {
-          kind = "tab";
-          integrations.diffview = true;
-        };
-      };
       diffview.enable = true;
-
-      # ── File explorer ────────────────────────────────────────────────
-      neo-tree = {
-        enable = true;
-        settings = {
-          close_if_last_window = true;
-          filesystem = {
-            follow_current_file.enabled = true;
-            use_libuv_file_watcher      = true;
-            filtered_items = {
-              hide_dotfiles   = false;
-              hide_gitignored = true;
-            };
-          };
-        };
-      };
 
       # ── UI ───────────────────────────────────────────────────────────
       lualine = {
@@ -319,14 +296,8 @@
         settings.options = {
           diagnostics          = "nvim_lsp";
           always_show_bufferline = false;
-          offsets = [{
-            filetype  = "neo-tree";
-            text      = "Explorer";
-            highlight = "Directory";
-          }];
         };
       };
-
 
       noice = {
         enable = true;
@@ -434,6 +405,13 @@
                 { icon = " "; key = "q"; desc = "Quit"; action = ":qa"; }
               ];
             };
+            # Explicit sections to avoid the default 'startup' section which
+            # calls require("lazy.stats") — lazy.nvim is not installed here.
+            sections = [
+              { section = "header"; }
+              { section = "keys"; gap = 1; padding = 1; }
+              { section = "recent_files"; limit = 5; padding = 1; }
+            ];
           };
           # ── Replaces indent-blankline ─────────────────────────────────────
           indent = {
@@ -545,13 +523,10 @@
 
     # ── Keymaps (LazyVim-compatible defaults) ────────────────────────────
     keymaps = [
-      # ── File explorer ────────────────────────────────────────────────
-      { key = "<leader>e";  action = "<cmd>Neotree toggle<cr>"; options.desc = "Explorer (neo-tree)"; }
+      # ── File explorer (mini.files) ────────────────────────────────────
+      { key = "<leader>e";  action.__raw = "function() require('mini.files').open(vim.api.nvim_buf_get_name(0)) end"; options.desc = "Explorer (mini.files)"; }
       { key = "<leader>fm"; action.__raw = "function() require('mini.files').open(vim.api.nvim_buf_get_name(0)) end"; options.desc = "Mini files (current file)"; }
       { key = "<leader>fM"; action.__raw = "function() require('mini.files').open() end"; options.desc = "Mini files (cwd)"; }
-
-      # ── Git ──────────────────────────────────────────────────────────
-      { key = "<leader>gg"; action = "<cmd>Neogit<cr>"; options.desc = "Neogit"; }
 
       # ── Window management (<leader>w group) ──────────────────────────
       { mode = "n"; key = "<leader>wd"; action = "<C-w>c"; options.desc = "Close window"; }

@@ -22,8 +22,10 @@ echo "==> Output directory: $OUT_DIR"
 mkdir -p "$OUT_DIR"
 
 # ── 1. Build home-manager activation package ────────────────────────
-echo "==> Building home-manager activation package..."
-nix build "$REPO_DIR#homeConfigurations.wsl.activationPackage" \
+# Use the airgap profile — includes work tools (glab, jfrog, oc, mc, pass, …)
+# and has autoupdate disabled. Do NOT use #wsl here.
+echo "==> Building home-manager activation package (airgap profile)..."
+nix build "$REPO_DIR#homeConfigurations.airgap.activationPackage" \
   --out-link "$OUT_DIR/result"
 
 ACTIVATION_PATH="$(readlink -f "$OUT_DIR/result")"
@@ -59,4 +61,7 @@ echo ""
 echo "Transfer '$OUT_DIR/' to the airgapped machine, then build with:"
 echo "  podman build -f Dockerfile.airgap \\"
 echo "    --build-arg ACTIVATION_STORE_PATH=$(cat "$OUT_DIR/activation-store-path") \\"
-echo "    -t dev-headless ."
+echo "    -t dev-airgap ."
+echo ""
+echo "The build runs test-smoke.sh --airgap automatically."
+echo "A failed build means a binary check failed — do not transfer a broken image."

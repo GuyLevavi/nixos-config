@@ -1,0 +1,9 @@
+.git
+.claude
+airgap-artifacts
+result
+desktop_env.md
+DECISIONS.md
+config/nvim
+hosts
+hardware-configuration.nix
