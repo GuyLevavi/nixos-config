@@ -48,8 +48,8 @@
   #   eval $(gpg-agent --daemon --pinentry-program $(which pinentry-tty))
   programs.gpg.enable = true;
   services.gpg-agent = {
-    enable          = true;
-    pinentryPackage = pkgs.pinentry-tty;
+    enable           = true;
+    pinentry.package = pkgs.pinentry-tty;
     defaultCacheTtl = 28800;  # 8 h — covers a full airgap work session
     maxCacheTtl     = 86400;  # 24 h
   };
