@@ -4,12 +4,46 @@ NixOS flake config — Hyprland desktop (nixbox) + headless home-manager (WSL/Do
 Catppuccin Mocha theming throughout. NixVim replaces LazyVim — all plugins baked in at build time,
 no Mason, no runtime downloads.
 
-## Quick start
+## Deploy
+
+### nixbox — GUI desktop (on-machine)
 
 ```nushell
-rb       # apply all changes  (sudo nixos-rebuild switch --flake /etc/nixos#nixbox)
-update   # bump flake.lock, then rb
+rb       # sudo nixos-rebuild switch --flake /etc/nixos#nixbox
+update   # nix flake update + rb
 ```
+
+### WSL / headless — online NixOS or Ubuntu
+
+**NixOS WSL** (Nix already present — first time or to update):
+
+```bash
+git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config  # first time only
+nix run nixpkgs#home-manager -- switch --flake ~/nixos-config#wsl
+```
+
+**Bare Ubuntu** (no Nix yet):
+
+```bash
+curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+. ~/.nix-profile/etc/profile.d/nix.sh
+mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config
+nix run nixpkgs#home-manager -- switch --flake ~/nixos-config#wsl
+```
+
+Subsequent updates: `cd ~/nixos-config && git pull && nix run nixpkgs#home-manager -- switch --flake .#wsl`
+
+### Docker (online, Ubuntu base)
+
+```bash
+podman build -f Dockerfile.headless -t dev-headless .
+podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
+```
+
+### Airgap — see [Airgap deployment](#airgap-deployment) below.
+
+---
 
 ## Structure
 
@@ -42,22 +76,6 @@ DECISIONS.md                 # rationale for every architectural choice
 | `nixosConfigurations.nixbox` | Intel desktop, Hyprland GUI, online — `rb` applies this |
 | `homeConfigurations.wsl` | Headless online (WSL2 / Docker / server) |
 | `homeConfigurations.airgap` | Headless offline — no network, autoupdate=false |
-
-## Headless deployment (WSL / Docker)
-
-Requires internet access (downloads Nix store on first build).
-
-```bash
-# Build image
-podman build -f Dockerfile.headless -t dev-headless .
-
-# Run with SSH keys
-podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
-
-# Save for transfer
-podman save dev-headless | gzip > dev-headless.tar.gz
-# On target: podman load < dev-headless.tar.gz
-```
 
 ## Airgap deployment
 
