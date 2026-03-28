@@ -204,7 +204,15 @@ podman save dev-airgap | gzip > dev-airgap.tar.gz
 
 **RunAI pods (user: `jensen`)** — the `runai` profile builds the same tools but
 activates under `/home/jensen`. Use this when injecting into a corporate RunAI
-base image where the pre-existing user is `jensen`:
+base image where the pre-existing user is `jensen`.
+
+> **Two closures, not twice the disk**: `homeConfigurations.runai` and
+> `homeConfigurations.airgap` differ only in `home.username` / `home.homeDirectory`.
+> home-manager bakes those paths into activation scripts, so Nix sees two distinct
+> derivations and a separate closure export is unavoidable. In practice the actual
+> packages (neovim, LSP servers, parsers, etc.) are shared Nix store paths — only
+> the activation metadata differs. The tarballs are large because `nix-store --export`
+> includes the full closure, but after import the store deduplicates everything.
 
 ```bash
 ./scripts/build-airgap-closure.sh --runai    # builds homeConfigurations.runai
