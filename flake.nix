@@ -20,9 +20,14 @@
       url = "github:pfassina/lazyvim-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, catppuccin, lazyvim-nix, ... }:
+  outputs = { self, nixpkgs, home-manager, catppuccin, lazyvim-nix, nixos-wsl, ... }:
   let
     # Shared home-manager modules used by all configurations.
     commonHomeModules = [
@@ -52,13 +57,45 @@
         ];
       };
 
+      # NixOS-WSL headless — online, x86_64, no GUI.
+      # First-time setup: see README "Deploy → NixOS WSL" section.
+      # Apply: sudo nixos-rebuild switch --flake ~/nixos-config#wsl
+      wsl = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          nixos-wsl.nixosModules.default
+          {
+            wsl.enable      = true;
+            wsl.defaultUser = "gl";
+            # Don't pollute $PATH with Windows executables (major perf win).
+            # Keep interop.enabled = true so you can still call explorer.exe etc.
+            wsl.wslConf.interop.appendWindowsPath = false;
+            nix.settings.experimental-features = [ "nix-command" "flakes" ];
+            system.stateVersion = "25.05";
+          }
+          home-manager.nixosModules.home-manager
+          {
+            home-manager = {
+              useGlobalPkgs    = true;
+              useUserPackages  = true;
+              users.gl = {
+                imports = [ ./home/base.nix ] ++ commonHomeModules;
+              };
+              backupFileExtension = "backup";
+            };
+          }
+        ];
+      };
+
     };
 
     # ── Standalone home-manager configurations ────────────────────────────
+    # Use these when Nix is installed but the system is NOT NixOS
+    # (bare Ubuntu, Docker containers, non-NixOS servers).
     # Apply with:
     #   nix run nixpkgs#home-manager -- switch --flake /path/to/config#<name>
 
-    # Online headless — WSL / Ubuntu / Docker (has autoupdate, cloud plugins)
+    # Online headless — bare Ubuntu / Docker (has autoupdate, cloud plugins)
     homeConfigurations.wsl = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       modules = [ ./home/base.nix ] ++ commonHomeModules;

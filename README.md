@@ -13,16 +13,40 @@ rb       # sudo nixos-rebuild switch --flake /etc/nixos#nixbox
 update   # nix flake update + rb
 ```
 
-### WSL / headless — online NixOS or Ubuntu
+### NixOS WSL (fully declarative)
 
-**NixOS WSL** (Nix already present — first time or to update):
+**First time only** — as the default `nixos` user, make the system declarative:
+
+```bash
+sudo nano /etc/nixos/configuration.nix   # or your preferred editor
+```
+
+Add these three lines inside the `{ ... }` block:
+
+```nix
+wsl.defaultUser = "gl";
+wsl.wslConf.interop.appendWindowsPath = false;   # major perf win
+nix.settings.experimental-features = [ "nix-command" "flakes" ];
+```
+
+Apply and restart:
+
+```bash
+sudo nixos-rebuild boot
+# From PowerShell: wsl -t NixOS  →  wsl -d NixOS --user root exit  →  wsl -d NixOS
+```
+
+Then as `gl` (first time or any future update):
 
 ```bash
 git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config  # first time only
-nix run nixpkgs#home-manager -- switch --flake ~/nixos-config#wsl
+cd ~/nixos-config && git pull                                         # updates
+sudo nixos-rebuild switch --flake ~/nixos-config#wsl
 ```
 
-**Bare Ubuntu** (no Nix yet):
+This manages everything: username, flakes, PATH, and the full home-manager config.
+
+### Bare Ubuntu / non-NixOS (standalone home-manager)
 
 ```bash
 curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
@@ -32,7 +56,7 @@ git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config
 nix run nixpkgs#home-manager -- switch --flake ~/nixos-config#wsl
 ```
 
-Subsequent updates: `cd ~/nixos-config && git pull && nix run nixpkgs#home-manager -- switch --flake .#wsl`
+Updates: `cd ~/nixos-config && git pull && nix run nixpkgs#home-manager -- switch --flake .#wsl`
 
 ### Docker (online, Ubuntu base)
 
@@ -73,8 +97,9 @@ DECISIONS.md                 # rationale for every architectural choice
 
 | Output | Use case |
 |--------|----------|
-| `nixosConfigurations.nixbox` | Intel desktop, Hyprland GUI, online — `rb` applies this |
-| `homeConfigurations.wsl` | Headless online (WSL2 / Docker / server) |
+| `nixosConfigurations.nixbox` | Intel desktop, Hyprland GUI — `rb` applies this |
+| `nixosConfigurations.wsl` | NixOS-WSL headless — `sudo nixos-rebuild switch --flake .#wsl` |
+| `homeConfigurations.wsl` | Headless on bare Ubuntu / Docker (no NixOS) |
 | `homeConfigurations.airgap` | Headless offline — no network, autoupdate=false |
 
 ## Airgap deployment

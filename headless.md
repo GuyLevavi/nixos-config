@@ -35,16 +35,57 @@ gui.nix for everything graphical.
 | Target | Command | Notes |
 |---|---|---|
 | `nixbox` (current) | `rb` / `sudo nixos-rebuild switch --flake /etc/nixos#nixbox` | full GUI, imports gui.nix |
-| WSL / Ubuntu standalone | `nix run nixpkgs#home-manager -- switch --flake /etc/nixos#wsl` | imports base.nix only |
-| Docker dev container | See Dockerfile.dev below | Ubuntu + Nix + home-manager |
-| Remote server | Same as WSL path | SSH only |
+| NixOS-WSL | `sudo nixos-rebuild switch --flake ~/nixos-config#wsl` | declarative: username, PATH, flakes, home-manager |
+| Bare Ubuntu / Docker | `nix run nixpkgs#home-manager -- switch --flake ~/nixos-config#wsl` | standalone home-manager only |
+| Remote server | Same as bare Ubuntu path | SSH only |
 
 ---
 
-## WSL / Ubuntu standalone
+## NixOS-WSL (fully declarative, recommended)
 
-The `homeConfigurations.wsl` output in `flake.nix` uses standalone home-manager
-(no NixOS required). One-time setup on a fresh machine:
+Uses `nixosConfigurations.wsl` — manages the NixOS system AND home-manager in one rebuild.
+
+**First-time setup** (as the default `nixos` user):
+
+```bash
+sudo nano /etc/nixos/configuration.nix
+```
+
+Add inside the module block:
+
+```nix
+wsl.defaultUser = "gl";
+wsl.wslConf.interop.appendWindowsPath = false;   # prevents Windows PATH pollution
+nix.settings.experimental-features = [ "nix-command" "flakes" ];
+```
+
+Apply and restart WSL to switch user:
+
+```bash
+sudo nixos-rebuild boot
+# From PowerShell:
+#   wsl -t NixOS
+#   wsl -d NixOS --user root exit
+#   wsl -t NixOS
+#   wsl -d NixOS
+```
+
+**Apply this config (as `gl`, first time or any update):**
+
+```bash
+git clone https://github.com/GuyLevavi/nixos-config ~/nixos-config  # first time only
+cd ~/nixos-config && git pull                                          # on updates
+sudo nixos-rebuild switch --flake ~/nixos-config#wsl
+```
+
+---
+
+## Bare Ubuntu / standalone (no NixOS)
+
+The `homeConfigurations.wsl` output uses standalone home-manager (no NixOS required).
+Use this for bare Ubuntu, Docker containers, and non-NixOS servers.
+
+One-time setup on a fresh machine:
 
 ```bash
 # 1. Install Nix (single-user, no daemon — works in WSL and Ubuntu)
@@ -210,6 +251,8 @@ Less composable — updates require re-bundling the full archive.
 
 | Decision | Choice | Rationale |
 |---|---|---|
+| WSL system config | nixosConfigurations.wsl (NixOS-WSL flake) | fully declarative: username, PATH, flakes, home-manager in one rebuild |
+| WSL PATH | appendWindowsPath = false | Windows PATH over 9P bridge causes ~10x slower tab completion |
 | Shell in WSL | nushell (via bash exec guard) | consistent with nixbox; guard already handles nix-shell |
 | Python LSP | basedpyright (not pyright) | actively maintained fork, better defaults, same LSP protocol |
 | Python formatter | ruff (+ black kept) | ruff covers lint+format; black kept for projects that require it |
