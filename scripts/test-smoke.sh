@@ -99,6 +99,8 @@ check_ver "uv"         uv --version
 
 section "Multiplexer"
 check_ver "tmux"       tmux -V
+check_cfg "tmux allow-passthrough on (image.nvim/kitty graphics)" \
+  bash -c "grep -qr 'allow-passthrough on' ~/.config/tmux/ ~/.tmux.conf 2>/dev/null"
 
 section "Misc"
 check_bin "tv"           # television fuzzy finder

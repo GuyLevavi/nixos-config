@@ -288,6 +288,10 @@
       # True color passthrough
       set -as terminal-features ",*:RGB"
 
+      # Kitty graphics protocol passthrough — required by image.nvim (molten plots etc.)
+      # Without this, image.nvim throws "tmux does not have allow-passthrough enabled"
+      set -g allow-passthrough on
+
       # Renumber windows sequentially when one is closed
       set -g renumber-windows on
 
