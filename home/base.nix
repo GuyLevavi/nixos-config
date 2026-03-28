@@ -288,6 +288,16 @@
       # True color passthrough
       set -as terminal-features ",*:RGB"
 
+      # Extended keyboard protocol (Kitty protocol).
+      # nushell sets use_kitty_protocol=true, which sends \033[>1u to request
+      # extended keys on startup. Without this, that escape leaks through tmux
+      # to the outer terminal (Kitty), causing Kitty to send all subsequent keys
+      # as extended sequences (\x1b[104;1u for 'h' etc.) that tmux doesn't
+      # recognise — breaking hjkl in copy-mode and C-hjkl pane navigation.
+      # "on" makes tmux handle the protocol itself and pass extended keys to
+      # inner programs; outer terminal never sees the raw request.
+      set -g extended-keys on
+
       # Kitty graphics protocol passthrough — required by image.nvim (molten plots etc.)
       # Without this, image.nvim throws "tmux does not have allow-passthrough enabled"
       set -g allow-passthrough on
