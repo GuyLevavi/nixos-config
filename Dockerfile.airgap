@@ -3,15 +3,22 @@
 # Prerequisites (built on connected machine):
 #   ./scripts/build-airgap-closure.sh    → produces airgap-artifacts/
 #
-# Build (on airgap):
+# Build (default user gl):
 #   podman build -f Dockerfile.airgap \
 #     --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
-#     -t dev-headless .
+#     -t dev-airgap .
+#
+# Build for RunAI pods (user jensen):
+#   podman build -f Dockerfile.airgap \
+#     --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
+#     --build-arg USER_NAME=jensen \
+#     -t dev-airgap-runai .
 #
 # Run:
-#   podman run -it -v ~/.ssh:/home/gl/.ssh:ro dev-headless
+#   podman run -it -v ~/.ssh:/home/${USER_NAME}/.ssh:ro dev-airgap
 #
 # For custom base images, replace the FROM line below.
+# If the base image already has the target user, remove the useradd block.
 
 # ── Base layer ────────────────────────────────────────────────────────
 # Replace with your custom base image:
@@ -21,49 +28,58 @@ FROM ubuntu:24.04
 # The store path of the home-manager generation (from build-airgap-closure.sh)
 ARG ACTIVATION_STORE_PATH
 
-# Skip this block if your custom base image already has these:
+# Target username. Must match the user in the base image for RunAI pods.
+# RunAI pods use 'jensen'; change to match your environment.
+ARG USER_NAME=gl
+
+# Skip this block if your custom base image already has the target user:
 RUN apt-get update && apt-get install -y --no-install-recommends \
       xz-utils sudo locales \
     && locale-gen en_US.UTF-8 \
-    && useradd -m -s /bin/bash gl \
-    && echo "gl ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/gl \
+    && useradd -m -s /bin/bash ${USER_NAME} \
+    && echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME} \
     && rm -rf /var/lib/apt/lists/*
 
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
-USER gl
-WORKDIR /home/gl
-ENV USER=gl HOME=/home/gl
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+ENV USER=${USER_NAME} HOME=/home/${USER_NAME}
 
 # ── Install Nix offline ──────────────────────────────────────────────
-COPY --chown=gl:gl airgap-artifacts/nix-*-x86_64-linux.tar.xz /tmp/nix.tar.xz
+# Use user-only chown (no group) — the user's primary group may differ
+# from username in custom base images (RunAI lesson: jensen group absent).
+COPY airgap-artifacts/nix-*-x86_64-linux.tar.xz /tmp/nix.tar.xz
+RUN sudo chown ${USER_NAME} /tmp/nix.tar.xz
 
 RUN cd /tmp && tar xf nix.tar.xz && cd nix-* \
     && ./install --no-daemon --no-channel-add \
     && rm -rf /tmp/nix* \
-    && mkdir -p /home/gl/.config/nix \
-    && echo 'experimental-features = flakes nix-command' >> /home/gl/.config/nix/nix.conf
+    && mkdir -p /home/${USER_NAME}/.config/nix \
+    && echo 'experimental-features = flakes nix-command' >> /home/${USER_NAME}/.config/nix/nix.conf
 
-ENV PATH=/home/gl/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
+ENV PATH=/home/${USER_NAME}/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
 
 # ── Import pre-built Nix store closure (offline) ─────────────────────
-COPY --chown=gl:gl airgap-artifacts/nix-store/ /tmp/nix-store/
+COPY airgap-artifacts/nix-store/ /tmp/nix-store/
+RUN sudo chown -R ${USER_NAME} /tmp/nix-store || true
 
-RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
+RUN . /home/${USER_NAME}/.nix-profile/etc/profile.d/nix.sh \
     && nix copy --from "file:///tmp/nix-store" --all --no-check-sigs \
     && rm -rf /tmp/nix-store
 
 # ── Activate home-manager (everything already in /nix/store) ─────────
 # Remove Ubuntu defaults that conflict with home-manager managed files
-RUN rm -f /home/gl/.profile /home/gl/.bashrc /home/gl/.bash_logout
+RUN rm -f /home/${USER_NAME}/.profile /home/${USER_NAME}/.bashrc /home/${USER_NAME}/.bash_logout
 
-RUN . /home/gl/.nix-profile/etc/profile.d/nix.sh \
+RUN . /home/${USER_NAME}/.nix-profile/etc/profile.d/nix.sh \
     && ${ACTIVATION_STORE_PATH}/activate
 
 # ── Smoke test — fails the build if any expected binary is missing ────
 # Scripts are copied separately so the airgap image has them available.
-COPY --chown=gl:gl scripts/ /home/gl/scripts/
-RUN bash /home/gl/scripts/test-smoke.sh --airgap
+COPY scripts/ /home/${USER_NAME}/scripts/
+RUN sudo chown -R ${USER_NAME} /home/${USER_NAME}/scripts || true
+RUN bash /home/${USER_NAME}/scripts/test-smoke.sh --airgap
 
 # ── Runtime ───────────────────────────────────────────────────────────
-CMD ["/home/gl/.nix-profile/bin/nu"]
+CMD ["/bin/bash", "-c", ". ~/.nix-profile/etc/profile.d/nix.sh && exec nu"]

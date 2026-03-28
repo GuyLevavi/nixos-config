@@ -3,7 +3,10 @@
 # Produces all artifacts needed to deploy headless config on an airgapped machine.
 #
 # Usage:
-#   ./scripts/build-airgap-closure.sh [output-dir]
+#   ./scripts/build-airgap-closure.sh [--runai] [output-dir]
+#
+#   --runai   Build the 'runai' profile (user: jensen, for RunAI pods).
+#             Default builds the 'airgap' profile (user: gl).
 #
 # Output:
 #   airgap-artifacts/
@@ -16,16 +19,28 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OUT_DIR="${1:-$REPO_DIR/airgap-artifacts}"
 
-echo "==> Output directory: $OUT_DIR"
+# Parse --runai flag
+PROFILE="airgap"
+USER_NAME="gl"
+for arg in "$@"; do
+  case "$arg" in
+    --runai) PROFILE="runai"; USER_NAME="jensen" ;;
+  esac
+done
+# Remaining positional: output dir
+OUT_DIR="${1:-$REPO_DIR/airgap-artifacts}"
+[[ "$1" == "--runai" ]] && OUT_DIR="${2:-$REPO_DIR/airgap-artifacts}"
+
+echo "==> Output directory: $OUT_DIR (profile: $PROFILE, user: $USER_NAME)"
 mkdir -p "$OUT_DIR"
 
 # ── 1. Build home-manager activation package ────────────────────────
-# Use the airgap profile — includes work tools (glab, jfrog, oc, mc, pass, …)
-# and has autoupdate disabled. Do NOT use #wsl here.
-echo "==> Building home-manager activation package (airgap profile)..."
-nix build "$REPO_DIR#homeConfigurations.airgap.activationPackage" \
+# airgap: user gl  — includes work tools, autoupdate disabled.
+# runai:  user jensen — same tools, but activation paths under /home/jensen.
+# Do NOT use #wsl here (online tools, wrong user).
+echo "==> Building home-manager activation package ($PROFILE profile)..."
+nix build "$REPO_DIR#homeConfigurations.${PROFILE}.activationPackage" \
   --out-link "$OUT_DIR/result"
 
 ACTIVATION_PATH="$(readlink -f "$OUT_DIR/result")"
@@ -61,7 +76,10 @@ echo ""
 echo "Transfer '$OUT_DIR/' to the airgapped machine, then build with:"
 echo "  podman build -f Dockerfile.airgap \\"
 echo "    --build-arg ACTIVATION_STORE_PATH=$(cat "$OUT_DIR/activation-store-path") \\"
-echo "    -t dev-airgap ."
+if [[ "$PROFILE" == "runai" ]]; then
+echo "    --build-arg USER_NAME=jensen \\"
+fi
+echo "    -t dev-airgap-${PROFILE} ."
 echo ""
 echo "The build runs test-smoke.sh --airgap automatically."
 echo "A failed build means a binary check failed — do not transfer a broken image."

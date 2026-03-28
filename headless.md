@@ -192,20 +192,34 @@ nix copy --from file:///media/usb/nix-store /nix/store/<hash>-home-manager-gener
 
 ### Option B: Docker with pre-baked store (airgapped)
 
+Default (`gl` user, WSL/personal machine):
+
 ```bash
-# On connected machine: build closure + airgap image
-./scripts/build-airgap-closure.sh   # outputs airgap-artifacts/
+./scripts/build-airgap-closure.sh            # outputs airgap-artifacts/
 podman build -f Dockerfile.airgap \
   --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
   -t dev-airgap .
-# Build runs test-smoke.sh --airgap automatically — a failed build = broken image.
-
 podman save dev-airgap | gzip > dev-airgap.tar.gz
-
-# Transfer to airgapped machine (USB / sneakernet)
-podman load < dev-airgap.tar.gz
-podman run -it dev-airgap
 ```
+
+**RunAI pods (user: `jensen`)** — the `runai` profile builds the same tools but
+activates under `/home/jensen`. Use this when injecting into a corporate RunAI
+base image where the pre-existing user is `jensen`:
+
+```bash
+./scripts/build-airgap-closure.sh --runai    # builds homeConfigurations.runai
+podman build -f Dockerfile.airgap \
+  --build-arg ACTIVATION_STORE_PATH=$(cat airgap-artifacts/activation-store-path) \
+  --build-arg USER_NAME=jensen \
+  --build-arg SKIP_USERADD=true \            # base image already has jensen
+  -t dev-airgap-runai .
+```
+
+> **Recon first** — before building, confirm the username inside the pod:
+> `whoami` and `echo $HOME`. If it's not `jensen` / `/home/jensen`,
+> adjust `USER_NAME` and rebuild the `runai` closure accordingly.
+
+Build runs `test-smoke.sh --airgap` automatically — a failed build = broken image.
 
 ### Credential setup (airgap only)
 
@@ -253,6 +267,8 @@ Less composable — updates require re-bundling the full archive.
 |---|---|---|
 | WSL system config | nixosConfigurations.wsl (NixOS-WSL flake) | fully declarative: username, PATH, flakes, home-manager in one rebuild |
 | WSL PATH | appendWindowsPath = false | Windows PATH over 9P bridge causes ~10x slower tab completion |
+| RunAI username | homeConfigurations.runai (user: jensen) | RunAI pods have pre-existing 'jensen' user; activation paths must match |
+| RunAI chown | user-only, no group (|| true) | jensen group absent in base image — group chown fails silently |
 | Shell in WSL | nushell (via bash exec guard) | consistent with nixbox; guard already handles nix-shell |
 | Python LSP | basedpyright (not pyright) | actively maintained fork, better defaults, same LSP protocol |
 | Python formatter | ruff (+ black kept) | ruff covers lint+format; black kept for projects that require it |

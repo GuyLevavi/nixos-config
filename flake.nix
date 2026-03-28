@@ -109,5 +109,18 @@
       modules = [ ./home/base.nix ./home/airgap.nix ] ++ commonHomeModules;
     };
 
+    # RunAI airgap — same as airgap but for RunAI pods where the user is 'jensen'.
+    # RunAI pods have a pre-existing 'jensen' user; home-manager activation must
+    # match the actual username or symlinks land in the wrong home directory.
+    # Build: nix build .#homeConfigurations.runai.activationPackage
+    homeConfigurations.runai = home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      modules = [
+        ./home/base.nix
+        ./home/airgap.nix
+        { home.username = "jensen"; home.homeDirectory = "/home/jensen"; }
+      ] ++ commonHomeModules;
+    };
+
   };
 }
