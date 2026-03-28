@@ -10,12 +10,21 @@
     # ripgrep, fd, lazygit are already in home.packages — don't double-install
     installCoreDependencies = false;
 
+    # ── vim globals — set before plugins load ─────────────────────────────
+    # lazyvim_python_lsp is read by extras/lang/python.lua at plugin init time.
+    # "basedpyright" activates the basedpyright server (better type inference
+    # than stock pyright; required for type hint support). The lang.python
+    # extra already handles disabling ruff hover when this is set.
+    config.options = ''
+      vim.g.lazyvim_python_lsp = "basedpyright"
+    '';
+
     # ── LSP server binaries + formatters on PATH ──────────────────────────
     # extras.lang.* configures plugin specs but does NOT install binaries.
     # Every LSP server binary must be listed here explicitly.
     extraPackages = with pkgs; [
       # ── LSP servers ───────────────────────────────────────────────────
-      pyright                               # Python (pyright-langserver — lang.python extra)
+      basedpyright                          # Python — binary: basedpyright (lang.python extra)
       nil                                   # Nix (nil binary — lang.nix extra uses nil_ls)
       lua-language-server                   # Lua (LazyVim core config files)
       marksman                              # Markdown (cross-file links)
@@ -25,7 +34,7 @@
       taplo                                 # TOML (pyproject.toml, Cargo.toml)
       helm-ls                               # Helm charts
       bash-language-server                  # Bash / Shell
-      dockerfile-language-server             # Docker (dockerls)
+      dockerfile-language-server            # Docker (dockerls)
       docker-compose-language-service       # docker-compose files
       clang-tools                           # C/C++ (clangd + clang-format)
 
@@ -78,31 +87,13 @@
     };
 
     # ── Treesitter parsers (baked in at build time) ────────────────────────
+    # Include parsers requested by all active lang extras:
+    #   python → ninja, rst   helm → helm   json → json5
     treesitterParsers = with pkgs.vimPlugins.nvim-treesitter-parsers; [
-      bash c cpp css dockerfile fish go html javascript json lua
-      markdown markdown_inline nix python query rust toml tsx
+      bash c cpp css dockerfile fish go helm html javascript json json5 lua
+      markdown markdown_inline ninja nix python query rst rust toml tsx
       typescript vim vimdoc yaml
     ];
-
-    # ── Disable ruff hover: pyright provides better type/docstring hover ─────
-    # ruff hover only shows lint rule descriptions; pyright handles K properly.
-    plugins.ruff-hover-fix = ''
-      return {
-        {
-          "neovim/nvim-lspconfig",
-          init = function()
-            vim.api.nvim_create_autocmd("LspAttach", {
-              callback = function(args)
-                local client = vim.lsp.get_client_by_id(args.data.client_id)
-                if client and client.name == "ruff" then
-                  client.server_capabilities.hoverProvider = false
-                end
-              end,
-            })
-          end,
-        },
-      }
-    '';
 
     # ── iron.nvim — REPL (send code to a live Python/shell interpreter) ───
     # <leader>rs = start REPL   <leader>rc = send motion/visual
@@ -200,10 +191,10 @@
       }
     '';
 
-    # ── Catppuccin theme (not available as an extra — use plugin spec) ─────
-    # lazy=false + priority=1000: load before all other plugins so the
-    # colorscheme is available when statusline/bufferline plugins initialize.
-    # config: call setup() then activate via vim.cmd.colorscheme().
+    # ── Catppuccin theme ───────────────────────────────────────────────────
+    # lazy=false + priority=1000 is the documented LazyVim pattern for
+    # colorscheme plugins (LazyVim's own tokyonight default uses it).
+    # Ensures the theme loads before statusline/bufferline plugins initialize.
     plugins.colorscheme = ''
       return {
         "catppuccin/nvim",
