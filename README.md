@@ -1,8 +1,8 @@
 # nixos-config
 
 NixOS flake config — Hyprland desktop (nixbox) + headless home-manager (WSL/Docker/airgap).
-Catppuccin Mocha theming throughout. NixVim replaces LazyVim — all plugins baked in at build time,
-no Mason, no runtime downloads.
+Catppuccin Mocha theming throughout. LazyVim via lazyvim-nix — LSP servers, formatters, and
+treesitter parsers are pre-fetched by Nix. No Mason, no runtime downloads for tooling.
 
 ## Deploy
 
@@ -193,9 +193,22 @@ replace the `FROM ubuntu:24.04` line in the Dockerfile and skip the
 
 - **stateVersion**: `"25.05"` in both `home.nix` and `configuration.nix` — do not change after install
 - **Catppuccin**: must use `programs.<name>.enable = true` (not `home.packages`) or theming won't inject
-- **NixVim / no Mason**: all LSPs, formatters, treesitter grammars are pre-fetched by Nix at build time.
+- **No Mason**: LSPs, formatters, and treesitter grammars are pre-fetched by Nix (`extraPackages`).
   Mason is disabled. Ignore `:Mason` "not installed" cosmetic warnings — servers are on `$PATH` via Nix.
 - **nix-shell**: bash does not exec nushell inside `nix-shell` (guarded by `IN_NIX_SHELL`)
 - **Tmux prefix**: `C-a` (screen-style). Sessions persist across disconnects and are auto-saved every 15 min via continuum/resurrect.
 - **Television** (`tv`): fuzzy finder for files, git status, env vars, processes, docker images
 - **Chrome Catppuccin theme**: must be installed manually from the Web Store (extensions can't be declared)
+
+## Updating
+
+| What | Command | Notes |
+|---|---|---|
+| Everything (Nix packages + LazyVim distro) | `update` | bumps `flake.lock`, then `rb` |
+| LSP servers / formatters only | `rb` after editing `extraPackages` in `lazyvim.nix` | Nix-managed, no runtime downloads |
+| LazyVim plugins (online machines) | `:Lazy update` inside nvim | plugins live in `~/.local/share/nvim/lazy/`, persist across rebuilds |
+| Clean removed plugins | `:Lazy clean` inside nvim | removes plugins no longer in the spec |
+
+`update` (flake update) bumps nixpkgs, home-manager, lazyvim-nix, and all other inputs.
+`:Lazy update` is independent — it advances individual plugin commits without touching Nix.
+Both can be done separately or together.
