@@ -210,11 +210,11 @@
     '';
   };
 
-  # ── Airgap: pre-install lazy.nvim at the bootstrap location ──────────────
-  # LazyVim's init.lua checks vim.fn.stdpath("data") .. "/lazy/lazy.nvim" and
-  # clones from GitHub if absent. Pre-link the nix store copy so no network
-  # access is needed on first launch.
-  xdg.dataFile."nvim/lazy/lazy.nvim".source = pkgs.vimPlugins.lazy-nvim;
+  # NOTE: lazy.nvim bootstrap symlink is in airgap.nix, NOT here.
+  # On online machines (nixbox, wsl) lazy.nvim must be a real git clone so
+  # it can self-manage and update. The Nix store symlink breaks that:
+  # lazy.nvim finds a non-git directory and fails with "clone failed".
+  # The pre-link is only needed on airgap where GitHub is unreachable.
 
   # ── Python3 provider — packages importable by nvim's python3 host ────────
   # programs.lazyvim.extraPackages only adds to PATH; for `import jupyter_client`

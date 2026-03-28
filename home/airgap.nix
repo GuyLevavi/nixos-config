@@ -54,6 +54,14 @@
     maxCacheTtl     = 86400;  # 24 h
   };
 
+  # ── lazy.nvim bootstrap (airgap only) ────────────────────────────────
+  # LazyVim's init.lua clones lazy.nvim from GitHub on first launch if absent.
+  # On an online machine, that clone must succeed so lazy.nvim can git-manage
+  # itself (self-update, integrity checks). Pre-linking a Nix store path breaks
+  # that because lazy.nvim requires a real git repo at that location.
+  # Airgap has no network, so we pre-link the nixpkgs copy to skip the clone.
+  xdg.dataFile."nvim/lazy/lazy.nvim".source = pkgs.vimPlugins.lazy-nvim;
+
   # ── glab — disable update check ──────────────────────────────────────
   home.file.".config/glab-cli/config.yml".text = ''
     check_update: false
