@@ -318,10 +318,9 @@
       # Status bar at top
       set -g status-position top
 
-      # Catppuccin status modules
+      # Catppuccin status modules — session name only on the right
       set -g @catppuccin_flavor "mocha"
-      set -g @catppuccin_status_modules_right "session date_time"
-      set -g @catppuccin_date_time_text "%H:%M"
+      set -g @catppuccin_status_modules_right "session"
 
       # Continuum auto-save interval
       set -g @continuum-restore "on"

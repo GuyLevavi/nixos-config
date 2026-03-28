@@ -201,11 +201,20 @@
     '';
 
     # ── Catppuccin theme (not available as an extra — use plugin spec) ─────
+    # lazy=false + priority=1000: load before all other plugins so the
+    # colorscheme is available when statusline/bufferline plugins initialize.
+    # config: call setup() then activate via vim.cmd.colorscheme().
     plugins.colorscheme = ''
       return {
         "catppuccin/nvim",
-        name = "catppuccin",
-        opts = { flavour = "mocha" },
+        name     = "catppuccin",
+        lazy     = false,
+        priority = 1000,
+        opts     = { flavour = "mocha" },
+        config   = function(_, opts)
+          require("catppuccin").setup(opts)
+          vim.cmd.colorscheme("catppuccin-mocha")
+        end,
       }
     '';
   };
