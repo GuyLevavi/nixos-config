@@ -30,7 +30,7 @@ for arg in "$@"; do
 done
 # Remaining positional: output dir
 OUT_DIR="${1:-$REPO_DIR/airgap-artifacts}"
-[[ "$1" == "--runai" ]] && OUT_DIR="${2:-$REPO_DIR/airgap-artifacts}"
+[[ "${1:-}" == "--runai" ]] && OUT_DIR="${2:-$REPO_DIR/airgap-artifacts}"
 
 echo "==> Output directory: $OUT_DIR (profile: $PROFILE, user: $USER_NAME)"
 mkdir -p "$OUT_DIR"
@@ -79,7 +79,7 @@ echo "    --build-arg ACTIVATION_STORE_PATH=$(cat "$OUT_DIR/activation-store-pat
 if [[ "$PROFILE" == "runai" ]]; then
 echo "    --build-arg USER_NAME=jensen \\"
 fi
-echo "    -t dev-airgap-${PROFILE} ."
+echo "    -t dev-airgap$([[ "$PROFILE" == "runai" ]] && echo "-runai") ."
 echo ""
 echo "The build runs test-smoke.sh --airgap automatically."
 echo "A failed build means a binary check failed — do not transfer a broken image."
