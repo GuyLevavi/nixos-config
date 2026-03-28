@@ -344,6 +344,9 @@
       shell                   = "nu";
       confirm_os_window_close = 0;
       enable_audio_bell       = false;
+      # tmux manages its own scrollback — disable Kitty's buffer so scroll
+      # events pass through to tmux rather than opening Kitty's overlay.
+      scrollback_lines        = 0;
     };
   };
 
