@@ -200,7 +200,7 @@
           max-length = 20;
           tooltip-format-wifi = "{essid} ({signalStrength}%)\n{ipaddr}";
           tooltip-format-ethernet = "{ifname}\n{ipaddr}";
-          on-click = "kitty --title nmtui nmtui";
+          on-click = "kitty --title impala impala";
         };
 
         "battery" = {
@@ -537,5 +537,6 @@
     slurp # region selector (used with grim)
     playerctl # MPRIS media player control
     bluetui # bluetooth TUI manager (replaces blueman)
+    impala  # wifi TUI manager (replaces nmtui)
   ];
 }

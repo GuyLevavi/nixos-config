@@ -14,6 +14,16 @@
   # ── Network ───────────────────────────────────────────────────────────
   networking.hostName = "nixbox";
   networking.networkmanager.enable = true;
+  networking.networkmanager.wifi.backend = "iwd"; # iwd replaces wpa_supplicant; required by impala TUI
+
+  # ── Lid close behavior ────────────────────────────────────────────────
+  # Ignore lid close — don't suspend. Lets network/services run with lid shut.
+  # Manual sleep/shutdown still works normally.
+  services.logind.settings.Login = {
+    HandleLidSwitch             = "ignore";
+    HandleLidSwitchDocked       = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+  };
 
   # ── Locale & timezone ─────────────────────────────────────────────────
   time.timeZone = "Asia/Jerusalem";

@@ -1,13 +1,18 @@
 # home/base.nix — headless home-manager config
 # All tools that work without a display server.
 # Imported by home/gui.nix for nixbox; used standalone for WSL/Docker/server.
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   imports = [ ./lazyvim.nix ];
-  home.username    = "gl";
+  home.username = "gl";
   home.homeDirectory = "/home/gl";
-  home.stateVersion  = "25.05"; # DO NOT change after install
+  home.stateVersion = "25.05"; # DO NOT change after install
 
   programs.home-manager.enable = true;
 
@@ -17,22 +22,22 @@
   catppuccin.accent = "mauve";
 
   catppuccin.starship.enable = true;
-  catppuccin.fzf.enable      = true;
-  catppuccin.lazygit.enable  = true;
-  catppuccin.bat.enable      = true;
-  catppuccin.btop.enable     = true;
-  catppuccin.nushell.enable  = true;
+  catppuccin.fzf.enable = true;
+  catppuccin.lazygit.enable = true;
+  catppuccin.bat.enable = true;
+  catppuccin.btop.enable = true;
+  catppuccin.nushell.enable = true;
   catppuccin.opencode.enable = true;
-  catppuccin.delta.enable    = true;   # git diff pager
-  catppuccin.atuin.enable    = true;   # shell history search
-  catppuccin.tmux.enable     = true;
+  catppuccin.delta.enable = true; # git diff pager
+  catppuccin.atuin.enable = true; # shell history search
+  catppuccin.tmux.enable = true;
 
   # ── Shell: Bash (login) → exec Nushell ────────────────────────────────
   programs.bash = {
-    enable   = true;
+    enable = true;
     shellAliases = {
       vim = "nvim";
-      vi  = "nvim";
+      vi = "nvim";
     };
     initExtra = ''
       if [[ $- == *i* && -z "$BASH_EXECUTION_STRING" && -z "$IN_NIX_SHELL" ]]; then
@@ -46,6 +51,8 @@
     envFile.text = ''
       $env.EDITOR = "nvim"
       $env.VISUAL = "nvim"
+      # GitHub token for MCP server (github-copilot/mcp) — read from gh keyring at shell start
+      $env.GITHUB_TOKEN = (gh auth token err> /dev/null | str trim)
       # XDG_RUNTIME_DIR only exists under systemd/logind (nixbox). Guard it so
       # nushell starts cleanly in containers and WSL without a systemd session.
       if "XDG_RUNTIME_DIR" in $env {
@@ -162,7 +169,7 @@
   # LazyVim distribution via lazyvim-nix flake. All plugins, LSP tools,
   # and treesitter parsers are pre-fetched by Nix at build time.
   # No Mason, no runtime downloads. See home/lazyvim.nix for the config.
-  catppuccin.nvim.enable = false;  # lazyvim.nix manages catppuccin via plugins.colorscheme
+  catppuccin.nvim.enable = false; # lazyvim.nix manages catppuccin via plugins.colorscheme
 
   # ── Git ───────────────────────────────────────────────────────────────
   # delta.enable adds delta as the pager; catppuccin.delta themes it.
@@ -170,18 +177,23 @@
   #   - gui.nix sets it to "keepassxc" (GUI app, always running on nixbox)
   #   - headless: use SSH keys or let git prompt
   programs.git = {
-    enable   = true;
+    enable = true;
     settings = {
-      user.name  = "guy";
+      user.name = "guy";
       user.email = "guylevavi@gmail.com";
       init.defaultBranch = "main";
-      pull.rebase        = true;
-      core.editor        = "nvim";
+      pull.rebase = true;
+      core.editor = "nvim";
     };
   };
 
+  programs.gh = {
+    enable = true;
+    extensions = [];
+  };
+
   programs.delta = {
-    enable               = true;
+    enable = true;
     enableGitIntegration = true;
   };
 
@@ -205,16 +217,16 @@
     enable = true;
     enableNushellIntegration = true;
     settings = {
-      auto_sync    = false;  # local only — no cloud sync
+      auto_sync = false; # local only — no cloud sync
       update_check = false;
-      style        = "compact";
+      style = "compact";
       inline_height = 20;
     };
   };
 
   # ── Zoxide, fzf, starship ─────────────────────────────────────────────
   programs.zoxide = {
-    enable                   = true;
+    enable = true;
     enableNushellIntegration = true;
     # --no-cmd: emit __zoxide_z/__zoxide_zi internals + alias z/zi.
     # Do NOT override 'cd': __zoxide_z internally calls the built-in cd,
@@ -235,8 +247,8 @@
         "$git_branch"
         "$git_status"
         "$python$rust$nodejs$nix_shell"
-        "$container"   # shows 📦 image-name when inside podman/docker
-        "\n"           # newline before prompt character
+        "$container" # shows 📦 image-name when inside podman/docker
+        "\n" # newline before prompt character
       ];
       # character module disabled — starship has no vi mode support for nushell
       # (starship#4897). Vi mode indicator is handled by nushell's native
@@ -244,13 +256,13 @@
       character.disabled = true;
       directory = {
         truncation_length = 3;
-        style             = "bold blue";
+        style = "bold blue";
       };
       git_branch.style = "bold mauve";
       git_status.style = "bold peach";
       nix_shell = {
         symbol = "❄ ";
-        style  = "bold teal";
+        style = "bold teal";
       };
       # Container module — shows when running inside podman/docker.
       # Detection: reads /.dockerenv (docker) or /run/.containerenv (podman).
@@ -258,7 +270,7 @@
       # detection is purely file-based, so it works regardless of shell.
       container = {
         symbol = "📦 ";
-        style  = "bold yellow";
+        style = "bold yellow";
         format = "[$symbol$name]($style) ";
       };
     };
@@ -268,9 +280,33 @@
   programs.opencode = {
     enable = true;
     settings = {
-      autoshare  = false;
+      model = "github-copilot/claude-sonnet-4-6";
+      small_model = "github-copilot/claude-haiku-4-6";
+      autoshare = false;
       autoupdate = true;
-      plugin     = [ "oh-my-opencode" "opencode-gemini-auth@latest" ];
+      plugin = [
+        "superpowers@git+https://github.com/obra/superpowers.git"
+      ];
+      mcp = {
+        context7 = {
+          type = "remote";
+          url = "https://mcp.context7.com/mcp";
+          enabled = true;
+        };
+        grep_app = {
+          type = "remote";
+          url = "https://mcp.grep.app";
+          enabled = true;
+        };
+        github = {
+          type = "remote";
+          url = "https://api.githubcopilot.com/mcp/";
+          enabled = true;
+          headers = {
+            Authorization = "Bearer {env:GITHUB_TOKEN}";
+          };
+        };
+      };
     };
   };
 
@@ -368,6 +404,8 @@
 
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
+    github-copilot-cli  # provides `copilot` binary — `gh copilot` finds it via PATH
+
     # Core CLI tools
     ripgrep
     fd
@@ -375,32 +413,32 @@
     eza
     htop
     btop
-    dust       # du replacement
-    sd         # sed replacement
-    procs      # ps replacement
+    dust # du replacement
+    sd # sed replacement
+    procs # ps replacement
 
     # Containers
     podman-compose
     lazydocker
 
     # Python tooling — uv manages interpreter versions (uv python install 3.x)
-    python3    # default system Python; uv handles multi-version venvs
-    uv         # fast Python package/venv manager (replaces pip + pyenv + venv)
+    python3 # default system Python; uv handles multi-version venvs
+    uv # fast Python package/venv manager (replaces pip + pyenv + venv)
     # marimo: broken in nixpkgs unstable (0.19.4 patch conflict) — install via uv: uv tool install marimo
 
     # Terminal utilities
-    yazi       # terminal file manager
+    yazi # terminal file manager
     television # fuzzy finder (files, git, env vars, processes, docker)
-    glow       # markdown viewer
-    lnav       # log file viewer
-    fastfetch  # system info
+    glow # markdown viewer
+    lnav # log file viewer
+    fastfetch # system info
 
     # Kubernetes
-    k9s        # Kubernetes TUI
-    kubernetes-helm  # Kubernetes package manager (pkgs.helm is a music synth)
+    k9s # Kubernetes TUI
+    kubernetes-helm # Kubernetes package manager (pkgs.helm is a music synth)
 
     # Dev TUIs
-    posting    # HTTP client TUI (wraps httpx)
+    posting # HTTP client TUI (wraps httpx)
     # harlequin  # SQL TUI — broken in nixpkgs unstable (tomlkit<0.14 constraint)
   ];
 
@@ -409,7 +447,7 @@
     Unit.Description = "Podman API socket";
     Socket = {
       ListenStream = "%t/podman/podman.sock";
-      SocketMode    = "0660";
+      SocketMode = "0660";
     };
     Install.WantedBy = [ "sockets.target" ];
   };
