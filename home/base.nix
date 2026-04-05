@@ -52,7 +52,7 @@
       $env.EDITOR = "nvim"
       $env.VISUAL = "nvim"
       # GitHub token for MCP server (github-copilot/mcp) — read from gh keyring at shell start
-      $env.GITHUB_TOKEN = (gh auth token err> /dev/null | str trim)
+      $env.GITHUB_TOKEN = (try { gh auth token | str trim } catch { "" })
       # XDG_RUNTIME_DIR only exists under systemd/logind (nixbox). Guard it so
       # nushell starts cleanly in containers and WSL without a systemd session.
       if "XDG_RUNTIME_DIR" in $env {
@@ -280,8 +280,11 @@
   programs.opencode = {
     enable = true;
     settings = {
-      model = "github-copilot/claude-sonnet-4-6";
-      small_model = "github-copilot/claude-haiku-4-6";
+      # claude-sonnet-4.6 requires opt-in at github.com/settings/copilot/features
+      # (disabled by default; not available on student/free plans as of March 2026)
+      # Enabled alternatives: claude-sonnet-4.5, claude-opus-4.5, claude-haiku-4.5
+      model = "github-copilot/claude-sonnet-4.5";
+      small_model = "github-copilot/claude-haiku-4.5";
       autoshare = false;
       autoupdate = true;
       plugin = [
@@ -404,8 +407,6 @@
 
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
-    github-copilot-cli  # provides `copilot` binary — `gh copilot` finds it via PATH
-
     # Core CLI tools
     ripgrep
     fd
