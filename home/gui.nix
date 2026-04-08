@@ -589,6 +589,7 @@
     nixd          # Nix LSP (nix.serverPath points here)
     nixpkgs-fmt   # Nix formatter (nixd formatting.command points here)
     marimo        # Notebook IDE (marimo.marimoPath in vscode settings points here)
+    python313Packages.debugpy  # marimo notebook debugging (ms-python.debugpy extension)
 
     waypaper # GUI wallpaper picker (hyprpaper backend)
 
