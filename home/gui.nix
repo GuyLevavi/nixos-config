@@ -588,6 +588,7 @@
     ruff          # Python formatter + linter (ruff.path in vscode settings points here)
     nixd          # Nix LSP (nix.serverPath points here)
     nixpkgs-fmt   # Nix formatter (nixd formatting.command points here)
+    marimo        # Notebook IDE (marimo.marimoPath in vscode settings points here)
 
     waypaper # GUI wallpaper picker (hyprpaper backend)
 
