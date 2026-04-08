@@ -605,12 +605,4 @@
     bluetui # bluetooth TUI manager (replaces blueman)
   ];
 
-  # ── LD_LIBRARY_PATH: system libs for pip-installed compiled extensions ──
-  # home.sessionVariables writes a .sh file — nushell never sources it.
-  # Must set directly in nushell envFile. Empirically verified needed:
-  #   libstdc++.so.6 — torch, zmq, and most C++ extensions
-  #   libz.so.1      — numpy
-  programs.nushell.envFile.text = lib.mkAfter ''
-    $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib"
-  '';
 }

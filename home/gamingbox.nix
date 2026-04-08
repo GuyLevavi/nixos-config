@@ -26,12 +26,12 @@
     ''
   );
 
-  # ── LD_LIBRARY_PATH: extend gui.nix base with NVIDIA runtime libs ────
-  # gui.nix sets libstdc++ + zlib via nushell envFile.
-  # Append /run/opengl-driver/lib for NVIDIA-specific libs:
-  #   libnvidia-ml.so  (btop GPU stats, press 5)
-  #   libcuda.so       (torch.cuda.is_available())
-  # Second assignment wins in nushell, so the full path is used on gamingbox.
+  # ── LD_LIBRARY_PATH: system libs for pip compiled extensions + NVIDIA ─
+  # Set here (not gui.nix) to avoid nushell envFile ordering conflicts.
+  # Empirically verified needed:
+  #   libstdc++.so.6   — torch, zmq, most C++ extensions
+  #   libz.so.1        — numpy
+  #   /run/opengl-driver/lib — libcuda.so, libnvidia-ml.so (btop GPU)
   programs.nushell.envFile.text = lib.mkAfter ''
     $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib"
   '';
