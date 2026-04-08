@@ -562,173 +562,25 @@
       # ctrl+alt+t  → focus terminal panel     (workbench.action.terminal.focus)
       # ctrl+alt+d  → go to definition         (already F12 by default)
     ];
-    userSettings = {
-      # ── Updates — suppressed (VSCode version is pinned via pkgs.vscode in Nix)
-      "update.mode" = "none";
-      # ── Ruff — explicit Nix store path avoids bundled FHS binary (fails on NixOS)
-      "ruff.path" = [ "${pkgs.ruff}/bin/ruff" ];
-      # ── Nix LSP (jnoortheen.nix-ide) ────────────────────────────────────
-      "nix.enableLanguageServer" = true;
-      "nix.serverPath"           = "${pkgs.nixd}/bin/nixd";
-      "nix.serverSettings"       = {
-        "nixd" = {
-          "formatting" = { "command" = [ "${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt" ]; };
-        };
-      };
-      "[nix]" = { "editor.defaultFormatter" = "jnoortheen.nix-ide"; "editor.formatOnSave" = true; };
-      # ── Workbench ───────────────────────────────────────────────────────
-      "workbench.activityBar.location" = "top";
-      "workbench.statusBar.visible"    = true;
-      "workbench.tips.enabled"         = false;
-      "workbench.startupEditor"        = "none";
-      "workbench.editor.tabSizing"     = "shrink";
-      "workbench.colorTheme"           = "Catppuccin Mocha";
-      "workbench.iconTheme"            = "catppuccin-mocha";
-      "window.commandCenter"           = false;
-      "breadcrumbs.enabled"            = true;
-      # ── Explorer ────────────────────────────────────────────────────────
-      "explorer.openEditors.visible"  = 0;
-      "explorer.fileNesting.enabled"  = true;
-      "explorer.fileNesting.patterns" = {
-        "*.py"           = "\${capture}.pyc";
-        "pyproject.toml" = "poetry.lock, .python-version, setup.cfg, setup.py";
-      };
-      # ── Editor chrome ───────────────────────────────────────────────────
-      "editor.minimap.enabled"                 = false;
-      "editor.lineNumbers"                     = "on";
-      "editor.scrollbar.vertical"              = "auto";
-      "editor.scrollbar.horizontal"            = "auto";
-      "editor.overviewRulerBorder"             = false;
-      "editor.renderLineHighlight"             = "line";
-      "editor.glyphMargin"                     = true;
-      "editor.lightbulb.enabled"               = "off";
-      "editor.scrollBeyondLastLine"            = false;
-      "editor.guides.indentation"              = false;
-      "editor.wordWrap"                        = "off";
-      "editor.suggest.preview"                 = true;
-      "editor.inlineSuggest.enabled"           = true;
-      "editor.bracketPairColorization.enabled" = true;
-      "editor.guides.bracketPairs"             = "active";
-      "editor.cursorBlinking"                  = "blink";
-      "editor.cursorSmoothCaretAnimation"      = "off";
-      "editor.semanticHighlighting.enabled"    = true;
-      # ── Font ────────────────────────────────────────────────────────────
-      "editor.fontFamily"    = "JetBrainsMono Nerd Font Mono, JetBrainsMono NF, JetBrains Mono, monospace";
-      "editor.fontSize"      = 14;
-      "editor.fontLigatures" = true;
-      "editor.lineHeight"    = 1.65;
-      "editor.letterSpacing" = 0.3;
-      # ── Terminal — nushell ──────────────────────────────────────────────
-      "terminal.integrated.fontFamily"           = "JetBrainsMono Nerd Font Mono, JetBrainsMono NF, monospace";
-      "terminal.integrated.fontSize"             = 14;
-      "terminal.integrated.lineHeight"           = 1.2;
-      "terminal.integrated.cursorStyle"          = "line";
-      "terminal.integrated.gpuAcceleration"      = "on";
-      "terminal.integrated.defaultProfile.linux" = "nu";
-      "terminal.integrated.profiles.linux"       = {
-        "nu" = { "path" = "nu"; "icon" = "terminal"; };
-      };
-      # ── No italics (all themes) ─────────────────────────────────────────
-      "editor.tokenColorCustomizations" = {
-        "[*]" = {
-          "textMateRules" = [{
-            "scope" = [
-              "comment" "keyword" "storage.type" "storage.modifier"
-              "variable.language" "entity.name.type"
-              "entity.other.inherited-class" "support.type" "support.class"
-            ];
-            "settings" = { "fontStyle" = ""; };
-          }];
-        };
-      };
-      # ── Git ─────────────────────────────────────────────────────────────
-      "git.decorations.enabled" = false;
-      "git.untrackedChanges"    = "hidden";
-      # ── Python — disable legacy linters (Ruff + basedpyright handle everything)
-      "python.defaultInterpreterPath" = "python3";
-      "python.formatting.provider"    = "none";
-      "python.linting.enabled"        = false;
-      "python.linting.mypyEnabled"    = false;
-      "python.linting.pylintEnabled"  = false;
-      "python.linting.flake8Enabled"  = false;
-      # ── basedpyright ────────────────────────────────────────────────────
-      "basedpyright.analysis.typeCheckingMode"               = "standard";
-      "basedpyright.analysis.inlayHints.variableTypes"       = true;
-      "basedpyright.analysis.inlayHints.functionReturnTypes" = true;
-      "basedpyright.analysis.inlayHints.callArgumentNames"   = "all";
-      "basedpyright.analysis.inlayHints.pytestParameters"    = true;
-      "basedpyright.analysis.autoImportCompletions"          = true;
-      "basedpyright.analysis.indexing"                       = true;
-      "basedpyright.analysis.packageIndexDepths" = [
-        { "name" = "torch";       "depth" = 5; }
-        { "name" = "torchvision"; "depth" = 4; }
-        { "name" = "lightning";   "depth" = 4; }
-        { "name" = "cv2";         "depth" = 3; }
-        { "name" = "mlflow";      "depth" = 3; }
-        { "name" = "fastapi";     "depth" = 4; }
-        { "name" = "sqlalchemy";  "depth" = 3; }
-        { "name" = "dagshub";     "depth" = 3; }
-      ];
-      "basedpyright.analysis.diagnosticSeverityOverrides" = {
-        "reportUnusedImport"   = "none";
-        "reportUnusedVariable" = "none";
-      };
-      # ── Ruff ────────────────────────────────────────────────────────────
-      "ruff.enable"          = true;
-      "ruff.organizeImports" = true;
-      "ruff.fixAll"          = true;
-      "[python]" = {
-        "editor.defaultFormatter"  = "charliermarsh.ruff";
-        "editor.formatOnSave"      = true;
-        "editor.codeActionsOnSave" = {
-          "source.fixAll.ruff"          = "explicit";
-          "source.organizeImports.ruff" = "explicit";
-        };
-      };
-      "[json]"  = { "editor.defaultFormatter" = "vscode.json-language-features"; "editor.formatOnSave" = true; };
-      "[jsonc]" = { "editor.defaultFormatter" = "vscode.json-language-features"; "editor.formatOnSave" = true; };
-      "[yaml]"  = { "editor.defaultFormatter" = "redhat.vscode-yaml";            "editor.formatOnSave" = true; };
-      "[toml]"  = { "editor.defaultFormatter" = "tamasfe.even-better-toml";      "editor.formatOnSave" = true; };
-      # ── Jupyter ─────────────────────────────────────────────────────────
-      "jupyter.interactiveWindow.textEditor.executeSelection" = true;
-      "jupyter.askForKernelRestart"   = false;
-      "notebook.cellToolbarLocation"  = { "default" = "right"; };
-      "notebook.formatOnSave.enabled" = true;
-      "notebook.lineNumbers"          = "on";
-      "notebook.output.scrolling"     = true;
-      # ── Tool paths — PATH-relative (NixOS: binaries on PATH via Nix) ────
-      "marimo.marimoPath" = "marimo";
-      "dvc.dvcPath"       = "dvc";
-      # ── GitLens — minimal (inline blame off, hover on demand) ───────────
-      "gitlens.currentLine.enabled"        = false;
-      "gitlens.hovers.currentLine.enabled" = true;
-      "gitlens.hovers.currentLine.over"    = "line";
-      "gitlens.codeLens.enabled"           = false;
-      "gitlens.statusBar.enabled"          = false;
-      # ── Error Lens ──────────────────────────────────────────────────────
-      "errorLens.enabledDiagnosticLevels" = [ "error" "warning" ];
-      "errorLens.followCursor"            = "allLines";
-      "errorLens.delay"                   = 400;
-      "errorLens.fontStyleItalic"         = false;
-      "errorLens.messageMaxChars"         = 100;
-      # ── AutoDocstring ───────────────────────────────────────────────────
-      "autoDocstring.docstringFormat" = "numpy";
-      # ── YAML ────────────────────────────────────────────────────────────
-      "yaml.format.enable" = true;
-      "yaml.schemas"       = {};
-      # ── Files ───────────────────────────────────────────────────────────
-      "files.trimTrailingWhitespace" = true;
-      # ── Spell checker ───────────────────────────────────────────────────
-      "cSpell.language" = "en";
-      "cSpell.enabledFileTypes" = {
-        "python"    = true;
-        "markdown"  = true;
-        "yaml"      = true;
-        "toml"      = true;
-        "plaintext" = false;
-      };
-    };
+    # userSettings intentionally absent — settings.json is owned by VSCode (fully writable).
+    # Seeded once from config/vscode/settings.json by the activation script below.
+    # Edit live in VSCode UI or directly in ~/.config/Code/User/settings.json.
+    # Path-dependent values use ~/.nix-profile/bin/ which auto-updates with Nix upgrades.
   };
+
+  # ── VSCode settings seed ───────────────────────────────────────────────
+  # Copies config/vscode/settings.json to ~/.config/Code/User/settings.json
+  # ONCE — only if the file does not already exist. After that VSCode owns it.
+  # To reset to defaults: rm ~/.config/Code/User/settings.json && rb
+  home.activation.vscodeSettingsSeed = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings_dir="$HOME/.config/Code/User"
+    settings_file="$settings_dir/settings.json"
+    seed_file="${../config/vscode/settings.json}"
+    if [ ! -f "$settings_file" ]; then
+      $DRY_RUN_CMD mkdir -p "$settings_dir"
+      $DRY_RUN_CMD cp "$seed_file" "$settings_file"
+    fi
+  '';
 
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
