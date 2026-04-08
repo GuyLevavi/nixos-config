@@ -525,6 +525,7 @@
     extensions = with pkgs.vscode-marketplace; [
       # Python LSP stack (ruff = formatter+linter, basedpyright = types, python = picker)
       ms-python.python
+      ms-python.debugpy  # Python debugger — also used by marimo for notebook debugging
       charliermarsh.ruff
       detachhead.basedpyright
       # Code quality
@@ -589,7 +590,6 @@
     nixd          # Nix LSP (nix.serverPath points here)
     nixpkgs-fmt   # Nix formatter (nixd formatting.command points here)
     marimo        # Notebook IDE (marimo.marimoPath in vscode settings points here)
-    python313Packages.debugpy  # marimo notebook debugging (ms-python.debugpy extension)
 
     waypaper # GUI wallpaper picker (hyprpaper backend)
 
