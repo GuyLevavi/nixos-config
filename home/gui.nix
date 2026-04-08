@@ -514,6 +514,203 @@
     x11.enable = true;
   };
 
+  # ── VSCode ─────────────────────────────────────────────────────────────
+  # nix-vscode-extensions overlay (applied via flake.nix) exposes
+  # pkgs.vscode-marketplace.<publisher>.<name> for all marketplace extensions.
+  # mutableExtensionsDir = true: Nix manages the base set; marketplace installs coexist.
+  programs.vscode = {
+    enable = true;
+    package = pkgs.vscode;
+    mutableExtensionsDir = true;
+    extensions = with pkgs.vscode-marketplace; [
+      # Python LSP stack (ruff = formatter+linter, basedpyright = types, python = picker)
+      ms-python.python
+      charliermarsh.ruff
+      detachhead.basedpyright
+      # Code quality
+      usernamehw.errorlens
+      oderwat.indent-rainbow
+      streetsidesoftware.code-spell-checker
+      # Theme — Catppuccin Mocha
+      catppuccin.catppuccin-vsc
+      catppuccin.catppuccin-vsc-icons
+      # Data formats
+      redhat.vscode-yaml
+      tamasfe.even-better-toml
+      mechatroner.rainbow-csv
+      # Notebooks
+      ms-toolsai.jupyter
+      marimo-team.vscode-marimo
+      ms-toolsai.vscode-jupyter-powertoys
+      # Git
+      eamodio.gitlens
+      mhutchie.git-graph
+      # ML / Data science
+      lakefs.lakefs-dvc
+      njpwerner.autodocstring
+      # AI
+      github.copilot
+      github.copilot-chat
+    ];
+    keybindings = [
+      { key = "ctrl+shift+`"; command = "workbench.action.terminal.new"; }
+      { key = "ctrl+shift+e"; command = "workbench.view.explorer"; when = "!inputFocus"; }
+    ];
+    userSettings = {
+      # ── Workbench ───────────────────────────────────────────────────────
+      "workbench.activityBar.location" = "top";
+      "workbench.statusBar.visible"    = true;
+      "workbench.tips.enabled"         = false;
+      "workbench.startupEditor"        = "none";
+      "workbench.editor.tabSizing"     = "shrink";
+      "workbench.colorTheme"           = "Catppuccin Mocha";
+      "workbench.iconTheme"            = "catppuccin-mocha";
+      "window.commandCenter"           = false;
+      "breadcrumbs.enabled"            = true;
+      # ── Explorer ────────────────────────────────────────────────────────
+      "explorer.openEditors.visible"  = 0;
+      "explorer.fileNesting.enabled"  = true;
+      "explorer.fileNesting.patterns" = {
+        "*.py"           = "\${capture}.pyc";
+        "pyproject.toml" = "poetry.lock, .python-version, setup.cfg, setup.py";
+      };
+      # ── Editor chrome ───────────────────────────────────────────────────
+      "editor.minimap.enabled"                 = false;
+      "editor.lineNumbers"                     = "on";
+      "editor.scrollbar.vertical"              = "auto";
+      "editor.scrollbar.horizontal"            = "auto";
+      "editor.overviewRulerBorder"             = false;
+      "editor.renderLineHighlight"             = "line";
+      "editor.glyphMargin"                     = true;
+      "editor.lightbulb.enabled"               = "off";
+      "editor.scrollBeyondLastLine"            = false;
+      "editor.guides.indentation"              = false;
+      "editor.wordWrap"                        = "off";
+      "editor.suggest.preview"                 = true;
+      "editor.inlineSuggest.enabled"           = true;
+      "editor.bracketPairColorization.enabled" = true;
+      "editor.guides.bracketPairs"             = "active";
+      "editor.cursorBlinking"                  = "blink";
+      "editor.cursorSmoothCaretAnimation"      = "off";
+      "editor.semanticHighlighting.enabled"    = true;
+      # ── Font ────────────────────────────────────────────────────────────
+      "editor.fontFamily"    = "JetBrainsMono Nerd Font Mono, JetBrainsMono NF, JetBrains Mono, monospace";
+      "editor.fontSize"      = 14;
+      "editor.fontLigatures" = true;
+      "editor.lineHeight"    = 1.65;
+      "editor.letterSpacing" = 0.3;
+      # ── Terminal — nushell ──────────────────────────────────────────────
+      "terminal.integrated.fontFamily"           = "JetBrainsMono Nerd Font Mono, JetBrainsMono NF, monospace";
+      "terminal.integrated.fontSize"             = 14;
+      "terminal.integrated.lineHeight"           = 1.2;
+      "terminal.integrated.cursorStyle"          = "line";
+      "terminal.integrated.gpuAcceleration"      = "on";
+      "terminal.integrated.defaultProfile.linux" = "nu";
+      "terminal.integrated.profiles.linux"       = {
+        "nu" = { "path" = "nu"; "icon" = "terminal"; };
+      };
+      # ── No italics (all themes) ─────────────────────────────────────────
+      "editor.tokenColorCustomizations" = {
+        "[*]" = {
+          "textMateRules" = [{
+            "scope" = [
+              "comment" "keyword" "storage.type" "storage.modifier"
+              "variable.language" "entity.name.type"
+              "entity.other.inherited-class" "support.type" "support.class"
+            ];
+            "settings" = { "fontStyle" = ""; };
+          }];
+        };
+      };
+      # ── Git ─────────────────────────────────────────────────────────────
+      "git.decorations.enabled" = false;
+      "git.untrackedChanges"    = "hidden";
+      # ── Python — disable legacy linters (Ruff + basedpyright handle everything)
+      "python.defaultInterpreterPath" = "python3";
+      "python.formatting.provider"    = "none";
+      "python.linting.enabled"        = false;
+      "python.linting.mypyEnabled"    = false;
+      "python.linting.pylintEnabled"  = false;
+      "python.linting.flake8Enabled"  = false;
+      # ── basedpyright ────────────────────────────────────────────────────
+      "basedpyright.analysis.typeCheckingMode"               = "standard";
+      "basedpyright.analysis.inlayHints.variableTypes"       = true;
+      "basedpyright.analysis.inlayHints.functionReturnTypes" = true;
+      "basedpyright.analysis.inlayHints.callArgumentNames"   = "all";
+      "basedpyright.analysis.inlayHints.pytestParameters"    = true;
+      "basedpyright.analysis.autoImportCompletions"          = true;
+      "basedpyright.analysis.indexing"                       = true;
+      "basedpyright.analysis.packageIndexDepths" = [
+        { "name" = "torch";       "depth" = 5; }
+        { "name" = "torchvision"; "depth" = 4; }
+        { "name" = "lightning";   "depth" = 4; }
+        { "name" = "cv2";         "depth" = 3; }
+        { "name" = "mlflow";      "depth" = 3; }
+        { "name" = "fastapi";     "depth" = 4; }
+        { "name" = "sqlalchemy";  "depth" = 3; }
+        { "name" = "dagshub";     "depth" = 3; }
+      ];
+      "basedpyright.analysis.diagnosticSeverityOverrides" = {
+        "reportUnusedImport"   = "none";
+        "reportUnusedVariable" = "none";
+      };
+      # ── Ruff ────────────────────────────────────────────────────────────
+      "ruff.enable"          = true;
+      "ruff.organizeImports" = true;
+      "ruff.fixAll"          = true;
+      "[python]" = {
+        "editor.defaultFormatter"  = "charliermarsh.ruff";
+        "editor.formatOnSave"      = true;
+        "editor.codeActionsOnSave" = {
+          "source.fixAll.ruff"          = "explicit";
+          "source.organizeImports.ruff" = "explicit";
+        };
+      };
+      "[json]"  = { "editor.defaultFormatter" = "vscode.json-language-features"; "editor.formatOnSave" = true; };
+      "[jsonc]" = { "editor.defaultFormatter" = "vscode.json-language-features"; "editor.formatOnSave" = true; };
+      "[yaml]"  = { "editor.defaultFormatter" = "redhat.vscode-yaml";            "editor.formatOnSave" = true; };
+      "[toml]"  = { "editor.defaultFormatter" = "tamasfe.even-better-toml";      "editor.formatOnSave" = true; };
+      # ── Jupyter ─────────────────────────────────────────────────────────
+      "jupyter.interactiveWindow.textEditor.executeSelection" = true;
+      "jupyter.askForKernelRestart"   = false;
+      "notebook.cellToolbarLocation"  = { "default" = "right"; };
+      "notebook.formatOnSave.enabled" = true;
+      "notebook.lineNumbers"          = "on";
+      "notebook.output.scrolling"     = true;
+      # ── Tool paths — PATH-relative (NixOS: binaries on PATH via Nix) ────
+      "marimo.marimoPath" = "marimo";
+      "dvc.dvcPath"       = "dvc";
+      # ── GitLens — minimal (inline blame off, hover on demand) ───────────
+      "gitlens.currentLine.enabled"        = false;
+      "gitlens.hovers.currentLine.enabled" = true;
+      "gitlens.hovers.currentLine.over"    = "line";
+      "gitlens.codeLens.enabled"           = false;
+      "gitlens.statusBar.enabled"          = false;
+      # ── Error Lens ──────────────────────────────────────────────────────
+      "errorLens.enabledDiagnosticLevels" = [ "error" "warning" ];
+      "errorLens.followCursor"            = "allLines";
+      "errorLens.delay"                   = 400;
+      "errorLens.fontStyleItalic"         = false;
+      "errorLens.messageMaxChars"         = 100;
+      # ── AutoDocstring ───────────────────────────────────────────────────
+      "autoDocstring.docstringFormat" = "numpy";
+      # ── YAML ────────────────────────────────────────────────────────────
+      "yaml.format.enable" = true;
+      "yaml.schemas"       = {};
+      # ── Files ───────────────────────────────────────────────────────────
+      "files.trimTrailingWhitespace" = true;
+      # ── Spell checker ───────────────────────────────────────────────────
+      "cSpell.language" = "en";
+      "cSpell.enabledFileTypes" = {
+        "python"    = true;
+        "markdown"  = true;
+        "yaml"      = true;
+        "toml"      = true;
+        "plaintext" = false;
+      };
+    };
+  };
+
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
     waypaper # GUI wallpaper picker (hyprpaper backend)
