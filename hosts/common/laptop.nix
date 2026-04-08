@@ -101,6 +101,17 @@
     hinting.style = "medium";
   };
 
+  # ── nix-ld: FHS compatibility for pip/npm native extensions ──────────
+  # Provides a stub /lib/ld-linux-x86_64.so.2 and a curated set of libs
+  # so that pre-compiled binaries (e.g. torch._C, onnxruntime) can find
+  # libstdc++.so.6 and friends without patching or FHS chroots.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      stdenv.cc.cc.lib   # libstdc++.so.6  ← torch, onnxruntime, etc.
+    ];
+  };
+
   # ── Nix ───────────────────────────────────────────────────────────────
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
