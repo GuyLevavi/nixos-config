@@ -145,15 +145,15 @@
       }
 
       # Aliases
-      alias rb         = sudo nixos-rebuild switch --flake /etc/nixos#nixbox
-      alias update     = sudo nix flake update /etc/nixos
-      alias nsh        = nix-shell -p
-      alias gcold      = sudo nix-collect-garbage --delete-older-than 14d
-      alias ll         = eza -la --icons --git
-      alias lt         = eza --tree --icons
-      alias cat        = bat
-      # Python venv: activate with `overlay use .venv/bin/activate.nu`
-      alias deactivate = overlay hide activate
+      def rb [...args] {
+  sudo nixos-rebuild switch --flake $"/etc/nixos#(hostname | str trim)" ...$args
+}
+      alias update = sudo nix flake update /etc/nixos
+      alias nsh    = nix-shell -p
+      alias gcold  = sudo nix-collect-garbage --delete-older-than 14d
+      alias ll     = eza -la --icons --git
+      alias lt     = eza --tree --icons
+      alias cat    = bat
     '';
     # Expose z/zi after the zoxide source (which is injected into extraConfig
     # by enableNushellIntegration). lib.mkAfter guarantees this lands last.
@@ -279,6 +279,43 @@
     };
   };
 
+  # In your home.nix or a dedicated claude.nix module
+	programs.claude-code = {
+	  enable = true;
+
+	  mcpServers = {
+	    # Context7 - live, version-specific docs. Invoke with "use context7"
+	    context7 = {
+	      command = "npx";
+	      args = [ "-y" "@upstash/context7-mcp@latest" ];
+	    };
+
+	    # Superpowers (sequential thinking) - structured multi-step reasoning
+	    sequential-thinking = {
+	      command = "npx";
+	      args = [ "-y" "@modelcontextprotocol/server-sequential-thinking" ];
+	    };
+
+	    # Grep - search public GitHub repos for real code examples
+	    grep = {
+	      command = "npx";
+	      args = [ "-y" "@grep-mcp/server" ];
+	    };
+
+	    # mcp-nixos - query NixOS/HM options declaratively (no browser needed)
+	    nixos = {
+	      command = "nix";
+	      args = [ "run" "github:utensils/mcp-nixos" "--" ];
+	    };
+
+	    # filesystem - explicit file access beyond @ references
+	    filesystem = {
+	      command = "npx";
+	      args = [ "-y" "@modelcontextprotocol/server-filesystem"
+		       "/home/gl/projects" ];  # restrict to what you need
+	    };
+	  };
+	};
   # ── OpenCode — CLI AI assistant ────────────────────────────────────────
   programs.opencode = {
     enable = true;
@@ -429,6 +466,9 @@
     python3 # default system Python; uv handles multi-version venvs
     uv # fast Python package/venv manager (replaces pip + pyenv + venv)
     # marimo: broken in nixpkgs unstable (0.19.4 patch conflict) — install via uv: uv tool install marimo
+
+    # nodejs for npm/npx packages
+    nodejs
 
     # Terminal utilities
     yazi # terminal file manager
