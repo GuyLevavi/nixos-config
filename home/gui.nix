@@ -604,4 +604,11 @@
     playerctl # MPRIS media player control
     bluetui # bluetooth TUI manager (replaces blueman)
   ];
+
+  # ── LD_LIBRARY_PATH: libstdc++ for pip-installed compiled extensions ──
+  # pip-installed .so files (zmq, torch, onnxruntime, etc.) need libstdc++.so.6
+  # at dlopen() time. nix-ld's NIX_LD_LIBRARY_PATH only applies to entry-point
+  # binaries, not to dlopen() calls inside a running Nix-packaged Python.
+  # This exposes gcc's C++ runtime to all user sessions.
+  home.sessionVariables.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
 }

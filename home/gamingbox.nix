@@ -1,6 +1,6 @@
 # home/gamingbox.nix — gamingbox home-manager overrides.
 # Imports gui.nix and adds machine-specific display + NVIDIA env config.
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   imports = [ ./gui.nix ];
 
@@ -26,10 +26,13 @@
     ''
   );
 
-  # ── btop: NVIDIA GPU monitoring ───────────────────────────────────────
-  # btop needs libnvidia-ml.so to show GPU stats (press 5 in btop).
-  # In NixOS, NVIDIA runtime libs live in /run/opengl-driver/lib/.
-  home.sessionVariables.LD_LIBRARY_PATH = "/run/opengl-driver/lib";
+  # ── LD_LIBRARY_PATH: libstdc++ (from gui.nix) + NVIDIA runtime libs ──
+  # gui.nix sets LD_LIBRARY_PATH to stdenv.cc.cc.lib for libstdc++.so.6.
+  # gamingbox additionally needs /run/opengl-driver/lib for:
+  #   - libnvidia-ml.so  (btop GPU stats, press 5)
+  #   - libcuda.so       (torch.cuda.is_available())
+  home.sessionVariables.LD_LIBRARY_PATH = lib.mkForce
+    "${pkgs.stdenv.cc.cc.lib}/lib:/run/opengl-driver/lib";
 
   # ── Kanshi: 144Hz external monitor ────────────────────────────────────
   # nixbox (Intel UHD) was limited to 120Hz on this same external monitor.
