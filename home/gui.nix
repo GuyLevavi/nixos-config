@@ -548,9 +548,10 @@
       # ML / Data science
       lakefs.lakefs-dvc
       njpwerner.autodocstring
-      # AI
-      github.copilot
-      github.copilot-chat
+      # AI — install Copilot + Copilot Chat via VSCode UI instead:
+      # nix-vscode-extensions tracks latest versions which may require a newer
+      # VSCode than nixpkgs provides; the UI auto-selects a compatible version.
+      # mutableExtensionsDir = true makes this work alongside nix-managed ones.
     ];
     keybindings = [
       { key = "ctrl+shift+`"; command = "workbench.action.terminal.new"; }

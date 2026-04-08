@@ -11,6 +11,11 @@
   # ── Identity ──────────────────────────────────────────────────────────
   networking.hostName = "gamingbox";
 
+  # ── NVIDIA driver activation ──────────────────────────────────────────
+  # NixOS gates the NVIDIA hardware module on this option — required even on
+  # pure Wayland setups (no X server running).
+  services.xserver.videoDrivers = [ "nvidia" ];
+
   # ── NVIDIA RTX 4060 + Intel Iris Xe — PRIME Sync ──────────────────────
   # PRIME Sync: Intel iGPU handles display output; NVIDIA renders.
   # Best for simultaneous 165Hz internal + 144Hz external + CUDA.

@@ -25,6 +25,11 @@
     ''
   );
 
+  # ── btop: NVIDIA GPU monitoring ───────────────────────────────────────
+  # btop needs libnvidia-ml.so to show GPU stats (press 5 in btop).
+  # In NixOS, NVIDIA runtime libs live in /run/opengl-driver/lib/.
+  home.sessionVariables.LD_LIBRARY_PATH = "/run/opengl-driver/lib";
+
   # ── Kanshi: 144Hz external monitor ────────────────────────────────────
   # nixbox (Intel UHD) was limited to 120Hz on this same external monitor.
   # gamingbox has Intel Alder Lake-P with HDMI 2.0 — should support 144Hz.
