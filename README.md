@@ -98,9 +98,31 @@ DECISIONS.md                 # rationale for every architectural choice
 | Output | Use case |
 |--------|----------|
 | `nixosConfigurations.nixbox` | Intel desktop, Hyprland GUI — `rb` applies this |
+| `nixosConfigurations.gamingbox` | NVIDIA RTX 4060 laptop, PRIME Sync, CUDA |
 | `nixosConfigurations.wsl` | NixOS-WSL headless — `sudo nixos-rebuild switch --flake .#wsl` |
 | `homeConfigurations.wsl` | Headless on bare Ubuntu / Docker (no NixOS) |
 | `homeConfigurations.airgap` | Headless offline — no network, autoupdate=false |
+
+## Python / pip on NixOS (gamingbox)
+
+pip-installed compiled packages (`torch`, `numpy`, `zmq`, etc.) need two things to work:
+
+1. **`programs.nix-ld`** (in `hosts/common/laptop.nix`) — lets pre-built FHS binaries run
+   (VSCode extension bundled `uv`, downloaded tools).
+
+2. **`LD_LIBRARY_PATH`** (in `home/gamingbox.nix`) — lets Python find system libs at import time.
+   Set to `libstdc++:zlib:/run/opengl-driver/lib` (the last entry adds CUDA + GPU monitoring).
+
+If a new pip package fails with `libXXX.so.N: cannot open shared object file`:
+```bash
+ldd ~/.venv/lib/python3.x/site-packages/<pkg>/_foo.so | grep "not found"
+# find the owning Nix package, add it to both programs.nix-ld.libraries
+# and the LD_LIBRARY_PATH line in home/gamingbox.nix, then rb
+```
+
+**VSCode settings** live in `~/.config/Code/User/settings.json` (writable — edit freely in the UI).
+The file is seeded once from `config/vscode/settings.json` on first `rb`. To reset: delete the
+file and run `rb`.
 
 ## Airgap deployment
 

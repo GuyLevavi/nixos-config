@@ -577,3 +577,51 @@ programs.chromium = {
 **Status:** Policy file is generated at `/etc/opt/chrome/policies/managed/default.json`. Whether Chrome auto-installs the theme on next launch is to be verified. If it does not work, fall back to manual install from the Chrome Web Store.
 
 **Catppuccin Mocha Chrome theme:** Themes the tab bar, toolbar, window frame, and NTP in Mocha colors. Extension IDs for other flavors: Latte `jhjnalhegpceacdhbplhnakmkdliaddd`, Frappe `olhelnoplefjdmncknfphenjclimckaf`, Macchiato `cmpdlhmnmjhihmcfnigoememnffkimlk`.
+
+
+---
+
+### Decision 31 — pip compiled extensions: nix-ld + LD_LIBRARY_PATH in nushell envFile (2026-04-08)
+
+**Problem:** pip-installed Python packages with compiled C/C++ extensions (`torch`, `numpy`, `zmq`)
+fail to import on NixOS because their bundled `.so` files cannot find system libraries at runtime.
+
+**Root cause:** Two separate failure modes:
+1. Pre-built FHS ELF binaries (VSCode extension bundled `uv`, `ruff`) fail because NixOS has no
+   `/lib64/ld-linux-x86-64.so.2` stub linker by default.
+2. Compiled Python extensions call `dlopen()` from inside a running Nix-packaged Python. The kernel
+   resolves these via `LD_LIBRARY_PATH` only — `nix-ld`'s `NIX_LD_LIBRARY_PATH` is only injected
+   at binary launch time, not inherited by `dlopen()`.
+
+**Solution:**
+
+*System level (`hosts/common/laptop.nix`):*
+```nix
+programs.nix-ld = {
+  enable = true;
+  libraries = with pkgs; [ stdenv.cc.cc.lib  zlib ];
+};
+```
+Fixes entry-point FHS binaries (bundled uv, ruff, node).
+
+*User level (`home/gamingbox.nix`):*
+```nix
+programs.nushell.envFile.text = lib.mkAfter ''
+  $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib"
+'';
+```
+Fixes `dlopen()` inside Python. `/run/opengl-driver/lib` adds CUDA/NVML for gamingbox.
+
+**Why not `home.sessionVariables`:** generates a `.sh` file; nushell never sources it.
+
+**Why not in `gui.nix`:** `lib.mkAfter` ordering — `gui.nix` fragments are appended after
+`gamingbox.nix` fragments, so `gui.nix` values overwrite machine-specific ones. Set in
+machine-specific home file only.
+
+**Empirically verified libraries needed:**
+- `libstdc++.so.6` (`stdenv.cc.cc.lib`) — torch `_C.so`, zmq `_zmq.abi3.so`, most C++ extensions
+- `libz.so.1` (`zlib`) — numpy `_multiarray_umath.so`
+- `/run/opengl-driver/lib` — `libcuda.so` (torch CUDA), `libnvidia-ml.so` (btop GPU view)
+
+If a new pip package fails to import with a missing `.so.N` error, check `ldd` on its `.so` file
+and add the owning Nix package to both `programs.nix-ld.libraries` and the `LD_LIBRARY_PATH` line.
