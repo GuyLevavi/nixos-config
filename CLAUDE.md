@@ -91,7 +91,7 @@ Short version: `programs.nix-ld` in `hosts/common/laptop.nix` fixes FHS entry-po
 
 `~/.config/Code/User/settings.json` is writable (owned by VSCode). Seeded once from
 `config/vscode/settings.json` on first `rb`. Edit live in UI or the file directly.
-Tool paths must be **absolute** (`/home/gl/.nix-profile/bin/ruff`), not tilde paths.
+Tool paths must be **absolute** (`/etc/profiles/per-user/gl/bin/ruff`), not tilde paths.
 
 ### uwsm + greetd
 

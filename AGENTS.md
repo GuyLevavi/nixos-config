@@ -125,8 +125,8 @@ When both `gui.nix` and `gamingbox.nix` use `lib.mkAfter` on the same string opt
 **Rule:** set machine-specific env vars only in the machine's home file, not in gui.nix.
 
 #### VSCode tool paths
-VSCode extensions call `spawn()` directly — no shell expansion. Tilde paths (`~/.nix-profile/bin/ruff`)
-**do not work**. Always use absolute paths (`/home/gl/.nix-profile/bin/ruff`).
+VSCode extensions call `spawn()` directly — no shell expansion. Tilde paths (`/etc/profiles/per-user/gl/bin/ruff (not ~/.nix-profile/bin/)`)
+**do not work**. Always use absolute paths (`/etc/profiles/per-user/gl/bin/ruff`).
 
 `programs.neovim.extraPackages` only exposes binaries inside neovim's PATH wrapper — VSCode cannot
 see them. Tools needed by VSCode (ruff, nixd, nixpkgs-fmt) must be in `home.packages` in `gui.nix`.
