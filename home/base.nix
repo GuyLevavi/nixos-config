@@ -145,13 +145,15 @@
       }
 
       # Aliases
-      alias rb     = sudo nixos-rebuild switch --flake /etc/nixos#nixbox
-      alias update = sudo nix flake update /etc/nixos
-      alias nsh    = nix-shell -p
-      alias gcold  = sudo nix-collect-garbage --delete-older-than 14d
-      alias ll     = eza -la --icons --git
-      alias lt     = eza --tree --icons
-      alias cat    = bat
+      alias rb         = sudo nixos-rebuild switch --flake /etc/nixos#nixbox
+      alias update     = sudo nix flake update /etc/nixos
+      alias nsh        = nix-shell -p
+      alias gcold      = sudo nix-collect-garbage --delete-older-than 14d
+      alias ll         = eza -la --icons --git
+      alias lt         = eza --tree --icons
+      alias cat        = bat
+      # Python venv: activate with `overlay use .venv/bin/activate.nu`
+      alias deactivate = overlay hide activate
     '';
     # Expose z/zi after the zoxide source (which is injected into extraConfig
     # by enableNushellIntegration). lib.mkAfter guarantees this lands last.
@@ -246,10 +248,11 @@
         "$directory"
         "$git_branch"
         "$git_status"
-        "$python$rust$nodejs$nix_shell"
+        "$nix_shell"
         "$container" # shows 📦 image-name when inside podman/docker
         "\n" # newline before prompt character
       ];
+      right_format = "$python$rust$nodejs";
       # character module disabled — starship has no vi mode support for nushell
       # (starship#4897). Vi mode indicator is handled by nushell's native
       # PROMPT_INDICATOR_VI_INSERT / PROMPT_INDICATOR_VI_NORMAL in envFile.
