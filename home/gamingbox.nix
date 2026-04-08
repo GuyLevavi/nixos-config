@@ -20,8 +20,9 @@
       # WLR_NO_HARDWARE_CURSORS=1: prevents cursor artifacts common on PRIME setups
       env = LIBVA_DRIVER_NAME,nvidia
       env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-      env = GBM_BACKEND,nvidia-drm
       env = WLR_NO_HARDWARE_CURSORS,1
+      # GBM_BACKEND=nvidia-drm intentionally omitted: modern NVIDIA drivers (520+)
+      # handle GBM correctly without it, and it breaks Chrome/Electron apps.
     ''
   );
 
