@@ -1,12 +1,12 @@
 {
   "update.mode": "none",
 
-  "ruff.path": ["/home/gl/.nix-profile/bin/ruff"],
+  "ruff.path": ["/etc/profiles/per-user/gl/bin/ruff"],
   "nix.enableLanguageServer": true,
-  "nix.serverPath": "/home/gl/.nix-profile/bin/nixd",
+  "nix.serverPath": "/etc/profiles/per-user/gl/bin/nixd",
   "nix.serverSettings": {
     "nixd": {
-      "formatting": { "command": ["/home/gl/.nix-profile/bin/nixpkgs-fmt"] }
+      "formatting": { "command": ["/etc/profiles/per-user/gl/bin/nixpkgs-fmt"] }
     }
   },
   "[nix]": { "editor.defaultFormatter": "jnoortheen.nix-ide", "editor.formatOnSave": true },
