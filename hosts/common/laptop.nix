@@ -101,14 +101,17 @@
     hinting.style = "medium";
   };
 
-  # ── nix-ld: FHS compatibility for pip/npm native extensions ──────────
-  # Provides a stub /lib/ld-linux-x86_64.so.2 and a curated set of libs
-  # so that pre-compiled binaries (e.g. torch._C, onnxruntime) can find
-  # libstdc++.so.6 and friends without patching or FHS chroots.
+  # ── nix-ld: run FHS entry-point binaries (bundled uv, node, etc.) ────
+  # Replaces the stub /lib64/ld-linux-x86-64.so.2 with a real linker so
+  # pre-built FHS ELF binaries (e.g. VSCode extension bundled uv) can run.
+  # NOTE: nix-ld only applies to entry-point binaries. pip-installed .so
+  # files loaded via dlopen() inside Python need LD_LIBRARY_PATH instead
+  # (set in gui.nix home.sessionVariables).
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
-      stdenv.cc.cc.lib   # libstdc++.so.6  ← torch, onnxruntime, etc.
+      stdenv.cc.cc.lib  # libstdc++.so.6
+      zlib              # libz.so.1
     ];
   };
 

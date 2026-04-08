@@ -32,7 +32,7 @@
   #   - libnvidia-ml.so  (btop GPU stats, press 5)
   #   - libcuda.so       (torch.cuda.is_available())
   home.sessionVariables.LD_LIBRARY_PATH = lib.mkForce
-    "${pkgs.stdenv.cc.cc.lib}/lib:/run/opengl-driver/lib";
+    "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib";
 
   # ── Kanshi: 144Hz external monitor ────────────────────────────────────
   # nixbox (Intel UHD) was limited to 120Hz on this same external monitor.

@@ -605,10 +605,12 @@
     bluetui # bluetooth TUI manager (replaces blueman)
   ];
 
-  # ── LD_LIBRARY_PATH: libstdc++ for pip-installed compiled extensions ──
-  # pip-installed .so files (zmq, torch, onnxruntime, etc.) need libstdc++.so.6
-  # at dlopen() time. nix-ld's NIX_LD_LIBRARY_PATH only applies to entry-point
-  # binaries, not to dlopen() calls inside a running Nix-packaged Python.
-  # This exposes gcc's C++ runtime to all user sessions.
-  home.sessionVariables.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
+  # ── LD_LIBRARY_PATH: system libs for pip-installed compiled extensions ──
+  # pip-installed .so files call dlopen() at runtime. nix-ld only helps for
+  # entry-point ELF binaries; LD_LIBRARY_PATH is needed for dlopen() inside
+  # a running Nix-packaged Python. Empirically verified needed:
+  #   libstdc++.so.6 — torch, zmq, and most C++ extensions
+  #   libz.so.1      — numpy (confirmed: fails without it)
+  home.sessionVariables.LD_LIBRARY_PATH =
+    "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib";
 }
