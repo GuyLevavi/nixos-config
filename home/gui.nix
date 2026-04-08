@@ -529,11 +529,12 @@
       detachhead.basedpyright
       # Code quality
       usernamehw.errorlens
-      oderwat.indent-rainbow
       streetsidesoftware.code-spell-checker
       # Theme — Catppuccin Mocha
       catppuccin.catppuccin-vsc
       catppuccin.catppuccin-vsc-icons
+      # Nix
+      jnoortheen.nix-ide
       # Data formats
       redhat.vscode-yaml
       tamasfe.even-better-toml
@@ -541,7 +542,6 @@
       # Notebooks
       ms-toolsai.jupyter
       marimo-team.vscode-marimo
-      ms-toolsai.vscode-jupyter-powertoys
       # Git
       eamodio.gitlens
       mhutchie.git-graph
@@ -554,10 +554,28 @@
       # mutableExtensionsDir = true makes this work alongside nix-managed ones.
     ];
     keybindings = [
-      { key = "ctrl+shift+`"; command = "workbench.action.terminal.new"; }
-      { key = "ctrl+shift+e"; command = "workbench.view.explorer"; when = "!inputFocus"; }
+      # Send selection / current line to debugger REPL (works when debugger is active)
+      { key = "ctrl+alt+e"; command = "editor.debug.action.selectionToRepl"; when = "editorHasSelection && inDebugMode"; }
+      { key = "ctrl+alt+e"; command = "editor.debug.action.selectionToRepl"; when = "!editorHasSelection && inDebugMode"; }
+      # Useful additions:
+      # ctrl+alt+b  → toggle sidebar          (workbench.action.toggleSidebarVisibility)
+      # ctrl+alt+t  → focus terminal panel     (workbench.action.terminal.focus)
+      # ctrl+alt+d  → go to definition         (already F12 by default)
     ];
     userSettings = {
+      # ── Updates — suppressed (VSCode version is pinned via pkgs.vscode in Nix)
+      "update.mode" = "none";
+      # ── Ruff — explicit Nix store path avoids bundled FHS binary (fails on NixOS)
+      "ruff.path" = [ "${pkgs.ruff}/bin/ruff" ];
+      # ── Nix LSP (jnoortheen.nix-ide) ────────────────────────────────────
+      "nix.enableLanguageServer" = true;
+      "nix.serverPath"           = "${pkgs.nixd}/bin/nixd";
+      "nix.serverSettings"       = {
+        "nixd" = {
+          "formatting" = { "command" = [ "${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt" ]; };
+        };
+      };
+      "[nix]" = { "editor.defaultFormatter" = "jnoortheen.nix-ide"; "editor.formatOnSave" = true; };
       # ── Workbench ───────────────────────────────────────────────────────
       "workbench.activityBar.location" = "top";
       "workbench.statusBar.visible"    = true;
@@ -714,6 +732,11 @@
 
   # ── Packages ──────────────────────────────────────────────────────────
   home.packages = with pkgs; [
+    # LSP / formatter binaries for VSCode (neovim extraPackages don't expose to VSCode PATH)
+    ruff          # Python formatter + linter (ruff.path in vscode settings points here)
+    nixd          # Nix LSP (nix.serverPath points here)
+    nixpkgs-fmt   # Nix formatter (nixd formatting.command points here)
+
     waypaper # GUI wallpaper picker (hyprpaper backend)
 
     # Credentials (GUI — KeePassXC requires a running display)
