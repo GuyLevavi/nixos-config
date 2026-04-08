@@ -606,11 +606,11 @@
   ];
 
   # ── LD_LIBRARY_PATH: system libs for pip-installed compiled extensions ──
-  # pip-installed .so files call dlopen() at runtime. nix-ld only helps for
-  # entry-point ELF binaries; LD_LIBRARY_PATH is needed for dlopen() inside
-  # a running Nix-packaged Python. Empirically verified needed:
+  # home.sessionVariables writes a .sh file — nushell never sources it.
+  # Must set directly in nushell envFile. Empirically verified needed:
   #   libstdc++.so.6 — torch, zmq, and most C++ extensions
-  #   libz.so.1      — numpy (confirmed: fails without it)
-  home.sessionVariables.LD_LIBRARY_PATH =
-    "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib";
+  #   libz.so.1      — numpy
+  programs.nushell.envFile.text = lib.mkAfter ''
+    $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib"
+  '';
 }

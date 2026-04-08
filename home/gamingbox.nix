@@ -26,13 +26,15 @@
     ''
   );
 
-  # ── LD_LIBRARY_PATH: libstdc++ (from gui.nix) + NVIDIA runtime libs ──
-  # gui.nix sets LD_LIBRARY_PATH to stdenv.cc.cc.lib for libstdc++.so.6.
-  # gamingbox additionally needs /run/opengl-driver/lib for:
-  #   - libnvidia-ml.so  (btop GPU stats, press 5)
-  #   - libcuda.so       (torch.cuda.is_available())
-  home.sessionVariables.LD_LIBRARY_PATH = lib.mkForce
-    "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib";
+  # ── LD_LIBRARY_PATH: extend gui.nix base with NVIDIA runtime libs ────
+  # gui.nix sets libstdc++ + zlib via nushell envFile.
+  # Append /run/opengl-driver/lib for NVIDIA-specific libs:
+  #   libnvidia-ml.so  (btop GPU stats, press 5)
+  #   libcuda.so       (torch.cuda.is_available())
+  # Second assignment wins in nushell, so the full path is used on gamingbox.
+  programs.nushell.envFile.text = lib.mkAfter ''
+    $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib"
+  '';
 
   # ── Kanshi: 144Hz external monitor ────────────────────────────────────
   # nixbox (Intel UHD) was limited to 120Hz on this same external monitor.
