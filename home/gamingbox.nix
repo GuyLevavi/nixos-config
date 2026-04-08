@@ -35,8 +35,22 @@
   # nixbox (Intel UHD) was limited to 120Hz on this same external monitor.
   # gamingbox has Intel Alder Lake-P with HDMI 2.0 — should support 144Hz.
   # If display negotiation fails (black screen after hotplug), change @144 → @120.
-  services.kanshi.profiles.external.outputs = lib.mkForce [
-    { criteria = "HDMI-A-1"; status = "enable"; position = "0,0"; mode = "1920x1080@144"; }
-    { criteria = "eDP-1";    status = "disable"; }
+  # lib.mkForce replaces the entire settings list from gui.nix.
+  services.kanshi.settings = lib.mkForce [
+    {
+      profile.name = "external";
+      profile.outputs = [
+        { criteria = "HDMI-A-1"; status = "enable"; position = "0,0"; mode = "1920x1080@144"; }
+        { criteria = "eDP-1"; status = "disable"; }
+      ];
+      profile.exec = [ "systemctl --user restart waybar hyprpaper" ];
+    }
+    {
+      profile.name = "internal";
+      profile.outputs = [
+        { criteria = "eDP-1"; status = "enable"; position = "0,0"; }
+      ];
+      profile.exec = [ "systemctl --user restart waybar hyprpaper" ];
+    }
   ];
 }

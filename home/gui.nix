@@ -36,33 +36,23 @@
   # ── Kanshi (automatic monitor switching) ──────────────────────────────
   services.kanshi = {
     enable = true;
-    profiles = {
-      external = {
-        outputs = [
-          {
-            criteria = "HDMI-A-1";
-            status = "enable";
-            position = "0,0";
-            mode = "1920x1080@120";
-          }
-          {
-            criteria = "eDP-1";
-            status = "disable";
-          }
+    settings = [
+      {
+        profile.name = "external";
+        profile.outputs = [
+          { criteria = "HDMI-A-1"; status = "enable"; position = "0,0"; mode = "1920x1080@120"; }
+          { criteria = "eDP-1"; status = "disable"; }
         ];
-        exec = [ "systemctl --user restart waybar hyprpaper" ];
-      };
-      internal = {
-        outputs = [
-          {
-            criteria = "eDP-1";
-            status = "enable";
-            position = "0,0";
-          }
+        profile.exec = [ "systemctl --user restart waybar hyprpaper" ];
+      }
+      {
+        profile.name = "internal";
+        profile.outputs = [
+          { criteria = "eDP-1"; status = "enable"; position = "0,0"; }
         ];
-        exec = [ "systemctl --user restart waybar hyprpaper" ];
-      };
-    };
+        profile.exec = [ "systemctl --user restart waybar hyprpaper" ];
+      }
+    ];
   };
 
   # ── Hyprpaper ─────────────────────────────────────────────────────────
@@ -589,7 +579,8 @@
     ruff          # Python formatter + linter (ruff.path in vscode settings points here)
     nixd          # Nix LSP (nix.serverPath points here)
     nixpkgs-fmt   # Nix formatter (nixd formatting.command points here)
-    marimo        # Notebook IDE (marimo.marimoPath in vscode settings points here)
+    # marimo: nixpkgs build broken (uv-build.patch conflict on 0.19.4).
+    # Use project venv marimo instead — set per-workspace in .vscode/settings.json.
 
     waypaper # GUI wallpaper picker (hyprpaper backend)
 

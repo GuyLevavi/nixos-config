@@ -131,7 +131,6 @@
   "notebook.lineNumbers": "on",
   "notebook.output.scrolling": true,
 
-  "marimo.marimoPath": "/home/gl/.nix-profile/bin/marimo",
   "dvc.dvcPath": "dvc",
 
   "gitlens.currentLine.enabled": false,
