@@ -95,6 +95,26 @@
         "type": "github"
       }
     },
+    "nix-vscode-extensions": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775530708,
+        "narHash": "sha256-+az4+mibiwi1YjgfCYLG9hNj4Nz3NXI9Zdi7a9ai2to=",
+        "owner": "nix-community",
+        "repo": "nix-vscode-extensions",
+        "rev": "828735c01584dd780b32dde9c2b8c7a968bffb51",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nix-vscode-extensions",
+        "type": "github"
+      }
+    },
     "nixos-wsl": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -136,6 +156,7 @@
         "catppuccin": "catppuccin",
         "home-manager": "home-manager",
         "lazyvim-nix": "lazyvim-nix",
+        "nix-vscode-extensions": "nix-vscode-extensions",
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs"
       }
