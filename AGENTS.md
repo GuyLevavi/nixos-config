@@ -117,12 +117,21 @@ a `.sh` file nushell never sources).
 | `libz.so.1` | `pkgs.zlib` | numpy |
 | `/run/opengl-driver/lib` | NVIDIA driver (gamingbox only) | `libcuda.so`, `libnvidia-ml.so` |
 
-Set in `home/gamingbox.nix` via `programs.nushell.envFile.text = lib.mkAfter ''...''`.
+Base libs (libstdc++, zlib) are set in `home/gui.nix` via `programs.nushell.envFile.text = lib.mkAfter ''...''`
+so they apply to all GUI machines (nixbox + gamingbox).
+`home/gamingbox.nix` appends `/run/opengl-driver/lib` via `lib.mkOrder 2000` (see below).
 
 #### Ordering gotcha with `lib.mkAfter`
-When both `gui.nix` and `gamingbox.nix` use `lib.mkAfter` on the same string option,
-`gui.nix`'s fragment is appended **after** `gamingbox.nix`'s (last wins in nushell).
-**Rule:** set machine-specific env vars only in the machine's home file, not in gui.nix.
+When both `gui.nix` and `gamingbox.nix` use `lib.mkAfter` (order 1500) on the same string option,
+`gui.nix`'s fragment ends up **last** (last wins in nushell). To run a fragment definitively after
+gui.nix's mkAfter, use `lib.mkOrder 2000` (any value > 1500) in the machine-specific file:
+
+```nix
+# gamingbox.nix — appends NVIDIA path after gui.nix sets the base
+programs.nushell.envFile.text = lib.mkOrder 2000 ''
+  $env.LD_LIBRARY_PATH = $"($env.LD_LIBRARY_PATH):/run/opengl-driver/lib"
+'';
+```
 
 #### VSCode tool paths
 VSCode extensions call `spawn()` directly — no shell expansion. Tilde paths (`/etc/profiles/per-user/gl/bin/ruff (not ~/.nix-profile/bin/)`)

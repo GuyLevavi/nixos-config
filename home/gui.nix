@@ -20,6 +20,18 @@
   catppuccin.zed.enable = true;
   catppuccin.zed.icons.enable = true;
 
+  # ── LD_LIBRARY_PATH: system libs for pip compiled extensions ──────────
+  # pip-installed .so files (torch, numpy, zmq) call dlopen() inside the
+  # running Python interpreter. NixOS has no FHS paths, so they fail unless
+  # these Nix store paths are on LD_LIBRARY_PATH.
+  # NOTE: home.sessionVariables generates a .sh file — nushell never sources
+  # it. Must use programs.nushell.envFile.text.
+  # lib.mkAfter (order 1500) ensures this runs after the base envFile.text.
+  # gamingbox.nix appends /run/opengl-driver/lib via lib.mkOrder 2000.
+  programs.nushell.envFile.text = lib.mkAfter ''
+    $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib"
+  '';
+
   # ── Git credential override ────────────────────────────────────────────
   # KeePassXC runs as a tray app on nixbox; override the empty helper from base.
   programs.git.settings.credential.helper = lib.mkForce "keepassxc";
@@ -194,6 +206,8 @@
         };
 
         "battery" = {
+          bat = "BAT0";
+          adapter = "ADP0";  # this machine uses ADP0, not the waybar default ADP1/AC
           states = {
             warning = 30;
             critical = 15;
@@ -201,6 +215,7 @@
           format = "{icon} {capacity}%";
           format-charging = "󰂄 {capacity}%";
           format-plugged = "󰚥 {capacity}%";
+          format-full = "󰁹 Full";
           format-icons = [
             "󰁺"
             "󰁻"
@@ -213,7 +228,13 @@
             "󰂂"
             "󰁹"
           ];
-          tooltip-format = "{timeTo}\n{power}W";
+          # {status} is not a valid fmt arg in waybar battery module (causes
+          # "argument not found" and hides the widget entirely). Use only
+          # {capacity} and {power}; {time} shows remaining when discharging.
+          tooltip-format = "{capacity}%\n{power}W";
+          tooltip-format-charging = "Charging\n{capacity}%\n{power}W";
+          tooltip-format-plugged = "Plugged\n{capacity}%";
+          tooltip-format-discharging = "Discharging\n{capacity}%\n{time}";
         };
 
         "bluetooth" = {
@@ -470,7 +491,8 @@
   programs.google-chrome = {
     enable = true;
     commandLineArgs = [
-      "--enable-features=WebUIDarkMode"
+      "--enable-features=WebUIDarkMode,VaapiVideoDecoder,VaapiVideoEncoder"
+      "--ignore-gpu-blocklist"   # Intel + NVIDIA are blocklisted by default on Linux
       "--force-dark-mode"
       "--ozone-platform=wayland"
       "--enable-wayland-ime"

@@ -106,7 +106,7 @@
   # pre-built FHS ELF binaries (e.g. VSCode extension bundled uv) can run.
   # NOTE: nix-ld only applies to entry-point binaries. pip-installed .so
   # files loaded via dlopen() inside Python need LD_LIBRARY_PATH instead
-  # (set in gui.nix home.sessionVariables).
+  # (set in gui.nix programs.nushell.envFile.text via lib.mkAfter).
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [

@@ -26,14 +26,14 @@
     ''
   );
 
-  # ── LD_LIBRARY_PATH: system libs for pip compiled extensions + NVIDIA ─
-  # Set here (not gui.nix) to avoid nushell envFile ordering conflicts.
-  # Empirically verified needed:
-  #   libstdc++.so.6   — torch, zmq, most C++ extensions
-  #   libz.so.1        — numpy
-  #   /run/opengl-driver/lib — libcuda.so, libnvidia-ml.so (btop GPU)
-  programs.nushell.envFile.text = lib.mkAfter ''
-    $env.LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib"
+  # ── LD_LIBRARY_PATH: append NVIDIA libs for CUDA + NVML ──────────────
+  # gui.nix sets the base (libstdc++, zlib) via lib.mkAfter (order 1500).
+  # Use lib.mkOrder 2000 here so this fragment comes AFTER gui.nix's and
+  # appends /run/opengl-driver/lib (libcuda.so, libnvidia-ml.so for btop GPU).
+  # lib.mkAfter from gamingbox.nix would be overwritten by gui.nix's mkAfter
+  # due to how the module system merges string fragments — hence mkOrder 2000.
+  programs.nushell.envFile.text = lib.mkOrder 2000 ''
+    $env.LD_LIBRARY_PATH = $"($env.LD_LIBRARY_PATH):/run/opengl-driver/lib"
   '';
 
   # ── Kanshi: 144Hz external monitor ────────────────────────────────────
