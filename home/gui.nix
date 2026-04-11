@@ -120,6 +120,7 @@
         ];
         modules-center = [ "hyprland/workspaces" ];
         modules-right = [
+          "mpris"
           "clock"
           "battery"
           "network"
@@ -134,6 +135,20 @@
           format = "󱓟";
           tooltip = false;
           on-click = "pkill rofi || rofi -show drun";
+        };
+
+        "mpris" = {
+          format = "{player_icon} {title} — {artist}";
+          format-paused = "{status_icon} {title} — {artist}";
+          player-icons = {
+            default  = "▶";
+            spotify  = "󰓇";
+          };
+          status-icons = {
+            paused = "⏸";
+          };
+          max-length = 40;
+          tooltip-format = "{title}\n{artist}\n{album}";
         };
 
         "hyprland/window" = {
@@ -388,6 +403,15 @@
         padding-right: 12px;
       }
 
+      /* ── MPRIS media player ───────────────────────────────────────── */
+      #mpris {
+        color: @pink;
+      }
+
+      #mpris.paused {
+        color: @overlay1;
+      }
+
       /* ── Tray ─────────────────────────────────────────────────────── */
       #tray > .passive         { -gtk-icon-effect: dim;       }
       #tray > .needs-attention { -gtk-icon-effect: highlight; }
@@ -604,6 +628,7 @@
     # marimo: nixpkgs build broken (uv-build.patch conflict on 0.19.4).
     # Use project venv marimo instead — set per-workspace in .vscode/settings.json.
 
+    spotify  # music player (MPRIS → waybar mpris widget)
     waypaper # GUI wallpaper picker (hyprpaper backend)
 
     # Credentials (GUI — KeePassXC requires a running display)
