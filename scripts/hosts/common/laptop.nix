@@ -20,10 +20,24 @@
   time.timeZone = "Asia/Jerusalem";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # ── Display manager: SDDM (Wayland) ───────────────────────────────────
-  services.displayManager.sddm = {
+  # ── Display manager: greetd (replaces SDDM) ───────────────────────────
+  # Auto-logs in as gl; Hyprland starts immediately, then exec-once = hyprlock
+  # locks the screen. The visible "login screen" is hyprlock (Catppuccin-themed).
+  # Falls back to tuigreet if the session ends (e.g. after logout).
+  # IMPORTANT: takes effect after `nixos-rebuild boot` + reboot,
+  # not a live switch (display managers can't be hot-swapped).
+  services.greetd = {
     enable = true;
-    wayland.enable = true;
+    settings = {
+      default_session = {
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd 'uwsm start hyprland.desktop'";
+        user = "greeter";
+      };
+      initial_session = {
+        command = "${pkgs.uwsm}/bin/uwsm start hyprland.desktop";
+        user = "gl";
+      };
+    };
   };
 
   # ── Desktop: Hyprland ─────────────────────────────────────────────────
