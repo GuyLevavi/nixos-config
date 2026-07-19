@@ -9,7 +9,7 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia = {
     modesetting.enable = true;    # required for Wayland
-    open = false;                 # proprietary — required for CUDA
+    open = true;                  # open kernel modules — recommended for RTX 20-series+ (Turing+); CUDA works
     nvidiaSettings = true;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     prime = {
@@ -39,4 +39,12 @@
   ];
   home-manager.users.gl.home.sessionVariables.LD_LIBRARY_PATH =
     "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:/run/opengl-driver/lib";
+
+  # Hyprland on NVIDIA: cursor + backend hints. If you ever see an invisible
+  # cursor, uncomment the software-cursors line in Hyprland (wiki: NVIDIA).
+  home-manager.users.gl.wayland.windowManager.hyprland.settings.env = [
+    "LIBVA_DRIVER_NAME,nvidia"
+    "GBM_BACKEND,nvidia-drm"
+    "__GLX_VENDOR_LIBRARY_NAME,nvidia"
+  ];
 }

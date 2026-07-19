@@ -6,7 +6,6 @@
   boot.loader.efi.canTouchEfiVariables = true;
   networking.networkmanager.enable = true;
 
-  # Docked-lid behavior: never sleep on lid close.
   services.logind.settings.Login = {
     HandleLidSwitch = "ignore";
     HandleLidSwitchDocked = "ignore";
@@ -16,29 +15,36 @@
   time.timeZone = "Asia/Jerusalem";
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # ── Desktop: COSMIC ────────────────────────────────────────────────────
-  # Full DE from nixpkgs: compositor, panel, launcher, lock, notifications,
-  # settings GUI, files, terminal. Settings are managed in the COSMIC
-  # Settings app; snapshot them to this repo with `cosmic-save` (base.nix).
-  services.desktopManager.cosmic = {
+  # ── Desktop: Hyprland ──────────────────────────────────────────────────
+  # Compositor only (nixpkgs module — keeps flake at 2 inputs). The shell
+  # around it (bar, clipboard, screenshots, notifications, lock) lives in
+  # home/gui.nix. To track Hyprland's bleeding edge instead, add the
+  # hyprland flake input and set programs.hyprland.package — but the
+  # nixpkgs build is what avoids config-breaking surprises.
+  programs.hyprland = {
     enable = true;
     xwayland.enable = true;
   };
-  services.displayManager.cosmic-greeter.enable = true;
 
-  # System76's scheduler — desktop responsiveness boost (any hardware).
-  services.system76-scheduler.enable = true;
+  # DankMaterialShell: bar (incl. MPRIS media widget), launcher, clipboard
+  # history UI, notifications, lock, OSDs, wallpaper — one module.
+  # Auto-starts via its systemd user service: do NOT exec-once it.
+  programs.dms-shell.enable = true;
 
-  # Flatpak backs the COSMIC Store. One-time: flatpak remote-add --user \
-  #   flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  services.flatpak.enable = true;
+  # Login manager: greetd + tuigreet (tiny, reliable, no dbus quirks).
+  services.greetd = {
+    enable = true;
+    settings.default_session = {
+      command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+      user = "greeter";
+    };
+  };
 
-  # Clipboard *history* (copy/paste itself needs none of this):
-  # the applet must come from nixpkgs (Store/Flatpak version can't reach the
-  # data-control protocol), and the protocol must be opted into. Tradeoff:
-  # with this var set, ALL apps can read the clipboard, not just the focused
-  # one. Then: Settings → Desktop → Panel → Configure applets → add it.
-  environment.sessionVariables.COSMIC_DATA_CONTROL_ENABLED = "1";
+  # Portals for screenshots + file pickers under Hyprland.
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  };
 
   # ── Audio / bluetooth ──────────────────────────────────────────────────
   services.pipewire = {
@@ -59,14 +65,13 @@
   };
 
   # ── User ───────────────────────────────────────────────────────────────
-  programs.fish.enable = true; # registers fish as a valid login shell
+  programs.fish.enable = true;
   users.users.gl = {
     isNormalUser = true;
     shell = pkgs.fish;
     extraGroups = [ "wheel" "networkmanager" "video" "audio" "podman" ];
   };
 
-  # ── nix-ld: lets pre-built FHS binaries run (downloaded tools, uv, etc.)
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [ stdenv.cc.cc.lib zlib ];
@@ -81,7 +86,6 @@
   nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 14d"; };
 
   environment.systemPackages = with pkgs; [ git vim wget curl pciutils usbutils ];
-  # Clipboard history applet is built into cosmic-applets; COSMIC_DATA_CONTROL_ENABLED enables it.
 
   fonts.packages = with pkgs; [
     nerd-fonts.jetbrains-mono
@@ -89,5 +93,5 @@
     noto-fonts-color-emoji
   ];
 
-  system.stateVersion = "25.05"; # do not change after install
+  system.stateVersion = "25.05";
 }
