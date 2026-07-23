@@ -10,6 +10,7 @@
   # `hyprctl reload` applies on save. Docs: https://wiki.hypr.land
   wayland.windowManager.hyprland = {
     enable = true;
+    configType = "hyprlang";   # keep legacy format; change to "lua" when migrating
     settings = {
       "$mod" = "SUPER";
       monitor = ",preferred,auto,1";
@@ -56,6 +57,7 @@
 
       bind = [
         "$mod,Return,exec,kitty"
+        "$mod,Z,exec,zeditor"
         "$mod,B,exec,google-chrome-stable"
         "$mod,E,exec,nautilus"
         "$mod,Q,killactive"
@@ -188,5 +190,44 @@
     grimblast wl-clipboard    # screenshots + clipboard plumbing
     spotify                   # shows in DMS bar's media widget (MPRIS)
     nautilus keepassxc
+    opencode opencode-desktop # AI coding agent (TUI + desktop client)
   ];
+
+  # ── OpenCode ────────────────────────────────────────────────────────────
+  xdg.configFile."opencode/opencode.json".text = builtins.toJSON {
+    "\$schema" = "https://opencode.ai/config.json";
+    plugin = [ "opencode-browser" ];
+    mcp = {
+      context7 = {
+        type = "local";
+        command = [ "npx" "-y" "@upstash/context7-mcp" ];
+        enabled = true;
+      };
+      playwright = {
+            type = "local";
+            command = [ "npx" "-y" "@playwright/mcp@latest" ];
+            enabled = true;
+      };
+      browsermcp = {
+        type = "local";
+        command = [ "npx" "-y" "@browsermcp/mcp@0.1.3" ];
+        enabled = true;
+      };
+      grep = {
+        type = "remote";
+        url = "https://mcp.grep.app";
+        enabled = true;
+      };
+      sequential-thinking = {
+        type = "local";
+        command = [ "npx" "-y" "@modelcontextprotocol/server-sequential-thinking" ];
+        enabled = true;
+      };
+      nixos = {
+        type = "local";
+        command = [ "nix" "run" "github:utensils/mcp-nixos" "--" ];
+        enabled = true;
+      };
+    };
+  };
 }

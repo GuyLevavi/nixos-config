@@ -35,7 +35,7 @@
   services.greetd = {
     enable = true;
     settings.default_session = {
-      command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+      command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
       user = "greeter";
     };
   };
@@ -55,6 +55,7 @@
   };
   security.rtkit.enable = true;
   hardware.bluetooth = { enable = true; powerOnBoot = true; };
+  services.upower.enable = true;
 
   # ── Containers ─────────────────────────────────────────────────────────
   virtualisation.podman = {
@@ -79,6 +80,9 @@
 
   # ── Nix / nixpkgs ──────────────────────────────────────────────────────
   nixpkgs.config.allowUnfree = true;
+  # openclaw: LLM agent w/ full system access, flagged insecure upstream (prompt-injection risk).
+  # Pinned to exact name-version; bump the string here if `update` bumps openclaw and rebuild fails.
+  nixpkgs.config.permittedInsecurePackages = [ "openclaw-2026.6.11" ];
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store = true;
