@@ -69,6 +69,5 @@
     python3 uv                     # uv handles venvs + interpreter versions
     nodejs                         # npm/npx
     k9s kubernetes-helm            # kubernetes
-    openclaw                       # self-hosted AI assistant/agent
   ];
 }

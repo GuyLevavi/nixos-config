@@ -93,9 +93,6 @@
 
   # ── Nix / nixpkgs ──────────────────────────────────────────────────────
   nixpkgs.config.allowUnfree = true;
-  # openclaw: LLM agent w/ full system access, flagged insecure upstream (prompt-injection risk).
-  # Pinned to exact name-version; bump the string here if `update` bumps openclaw and rebuild fails.
-  nixpkgs.config.permittedInsecurePackages = [ "openclaw-2026.6.11" ];
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store = true;

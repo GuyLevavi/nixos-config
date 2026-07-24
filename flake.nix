@@ -50,7 +50,6 @@
           ./home/airgap.nix
           {
             nixpkgs.config.allowUnfree = true;
-            nixpkgs.config.permittedInsecurePackages = [ "openclaw-2026.6.11" ];
           }
         ];
       };
