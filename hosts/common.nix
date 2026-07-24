@@ -32,18 +32,31 @@
   programs.dms-shell.enable = true;
 
   # Login manager: greetd + tuigreet (tiny, reliable, no dbus quirks).
+  # initial_session auto-logs in as gl straight into Hyprland; falls back to
+  # the tuigreet prompt (default_session) after that session ends.
   services.greetd = {
     enable = true;
-    settings.default_session = {
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
-      user = "greeter";
+    settings = {
+      default_session = {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd Hyprland";
+        user = "greeter";
+      };
+      initial_session = {
+        command = "Hyprland";
+        user = "gl";
+      };
     };
   };
 
   # Portals for screenshots + file pickers under Hyprland.
+  # Without xdg.portal.config, xdg-desktop-portal (1.17+) has no routing table
+  # and interfaces the hyprland backend doesn't implement (e.g. Settings, used
+  # by libadwaita apps like Nautilus to read the dark-mode preference) just
+  # fail instead of falling back to gtk.
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common.default = [ "hyprland" "gtk" ];
   };
 
   # ── Audio / bluetooth ──────────────────────────────────────────────────

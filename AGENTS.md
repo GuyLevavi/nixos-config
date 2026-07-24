@@ -105,7 +105,7 @@ FHS library paths. NixOS provides none of these. **Two separate mechanisms are n
 #### 1. `programs.nix-ld` — for entry-point FHS binaries
 
 Replaces the stub `/lib64/ld-linux-x86-64.so.2` so pre-built ELF binaries (e.g. VSCode extension
-bundled `uv`, downloaded `ruff`) can launch. Configured in `hosts/common/laptop.nix`.
+bundled `uv`, downloaded `ruff`) can launch. Configured in `hosts/common.nix`.
 `libraries` lists packages whose libs become available to those binaries.
 
 **nix-ld does NOT help with `dlopen()` inside a running Python interpreter.**

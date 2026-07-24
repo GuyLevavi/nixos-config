@@ -10,9 +10,10 @@
     monitor = lib.mkForce "eDP-1,2560x1440@165,0x0,1.25";
 
     # NVIDIA PRIME Sync environment hints.
+    # GBM_BACKEND=nvidia-drm intentionally omitted: modern NVIDIA drivers (520+)
+    # handle GBM correctly without it, and it breaks Chrome/Electron apps.
     env = [
       "LIBVA_DRIVER_NAME,nvidia"
-      "GBM_BACKEND,nvidia-drm"
       "__GLX_VENDOR_LIBRARY_NAME,nvidia"
       "WLR_NO_HARDWARE_CURSORS,1"
     ];
@@ -35,7 +36,6 @@
           { criteria = "HDMI-A-1"; status = "enable"; position = "0,0"; mode = "1920x1080@144"; }
           { criteria = "eDP-1"; status = "disable"; }
         ];
-        exec = [ "systemctl --user restart waybar hyprpaper" ];
       };
     }
     {
@@ -44,7 +44,6 @@
         outputs = [
           { criteria = "eDP-1"; status = "enable"; position = "0,0"; }
         ];
-        exec = [ "systemctl --user restart waybar hyprpaper" ];
       };
     }
   ];

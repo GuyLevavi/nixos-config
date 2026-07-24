@@ -78,7 +78,6 @@ home/
   gui.nix                    # Hyprland/Wayland GUI — imports base.nix
   gamingbox.nix              # gamingbox overrides — imports gui.nix, NVIDIA env, 2K monitor
   airgap.nix                 # offline delta — autoupdate=false, work tools, pass credentials
-home.nix                     # thin wrapper → imports gui.nix (nixbox desktop)
 hosts/
   common.nix                 # shared system config — boot, network, pipewire, nix-ld
   nixbox/default.nix         # Intel desktop hostname
@@ -107,7 +106,7 @@ DECISIONS.md                 # rationale for every architectural choice
 
 pip-installed compiled packages (`torch`, `numpy`, `zmq`, etc.) need two things to work:
 
-1. **`programs.nix-ld`** (in `hosts/common/laptop.nix`) — lets pre-built FHS binaries run
+1. **`programs.nix-ld`** (in `hosts/common.nix`) — lets pre-built FHS binaries run
    (VSCode extension bundled `uv`, downloaded tools).
 
 2. **`LD_LIBRARY_PATH`** (in `home/gamingbox.nix`) — lets Python find system libs at import time.
@@ -217,7 +216,7 @@ replace the `FROM ubuntu:24.04` line in the Dockerfile and skip the
 
 ## Notes
 
-- **stateVersion**: `"25.05"` in both `home.nix` and `configuration.nix` — do not change after install
+- **stateVersion**: `"25.05"` in both `home/base.nix` and `hosts/common.nix` — do not change after install
 - **Catppuccin**: must use `programs.<name>.enable = true` (not `home.packages`) or theming won't inject
 - **No Mason**: LSPs, formatters, and treesitter grammars are pre-fetched by Nix (`extraPackages`).
   Mason is disabled. Ignore `:Mason` "not installed" cosmetic warnings — servers are on `$PATH` via Nix.

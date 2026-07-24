@@ -35,6 +35,12 @@
         gamingbox = mkHost "gamingbox" ./home/gamingbox.nix;
       };
 
+      # Headless, online — bare Ubuntu/Docker (Dockerfile.headless, scripts/test-smoke.sh).
+      homeConfigurations.wsl = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        modules = [ ./home/base.nix ];
+      };
+
       # Headless, offline — built into a closure by scripts/build-airgap-closure.sh
       # and imported on the airgapped work machine (WSL) via `nix copy`.
       homeConfigurations.airgap = home-manager.lib.homeManagerConfiguration {

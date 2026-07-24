@@ -17,6 +17,9 @@
     SDL_VIDEODRIVER = "wayland";
     _JAVA_AWT_WM_NONREPARENTING = "1";
     OZONE_PLATFORM = "wayland";
+    XDG_CURRENT_DESKTOP = "Hyprland";
+    XDG_SESSION_TYPE = "wayland";
+    XDG_SESSION_DESKTOP = "Hyprland";
     # pip-installed compiled extensions dlopen() these at import time.
     LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib";
   };
@@ -35,7 +38,7 @@
   dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
 
   # ── Hyprland ───────────────────────────────────────────────────────────
-  # `hyprctl reload` applies on save. Docs: https://wiki.hyr.land
+  # `hyprctl reload` applies on save. Docs: https://wiki.hypr.land
   wayland.windowManager.hyprland = {
     enable = true;
     configType = "hyprlang"; # keep legacy format; change to "lua" when migrating
@@ -47,6 +50,7 @@
 
       input = {
         kb_layout = "us,il";
+        kb_model = "pc105"; # prevents xkbcomp "multiply defined" warnings from XWayland
         kb_options = "grp:alt_shift_toggle";
         follow_mouse = 1;
         touchpad.natural_scroll = true;
@@ -57,6 +61,7 @@
         gaps_out = 8;
         border_size = 2;
         layout = "dwindle";
+        resize_on_border = true;
         "col.active_border" = "rgb(cba6f7) rgb(89b4fa) 45deg";
         "col.inactive_border" = "rgb(6c7086)";
       };
@@ -65,6 +70,8 @@
         rounding = 10;
         active_opacity = 1.0;
         inactive_opacity = 0.85;
+        dim_inactive = true;
+        dim_strength = 0.05;
         blur = {
           enabled = true;
           xray = true;
@@ -102,8 +109,10 @@
         ];
       };
 
+      # dwindle:pseudotile and misc:vfr were removed as config options in
+      # Hyprland 0.55 — do not re-add. `pseudo` (bind below) still toggles
+      # per-window pseudotiling; VFR throttling is now handled internally.
       dwindle = {
-        pseudotile = true;
         preserve_split = true;
         force_split = 2; # always split to the right/bottom (new window opens beside current)
       };
@@ -112,7 +121,6 @@
         force_default_wallpaper = 0;
         disable_hyprland_logo = true;
         focus_on_activate = true;
-        vfr = true; # throttle frame callbacks when idle — biggest thermal win
       };
 
       binds.allow_workspace_cycles = true; # Super+Tab wraps 4 → 1
@@ -132,6 +140,10 @@
         "$mod,V,exec,dms ipc call clipboard toggle" # clipboard history
         "$mod,N,exec,dms ipc call notifications toggle"
         "$mod SHIFT,L,exec,dms ipc call lock lock"
+
+        # Session
+        "$mod SHIFT,E,exec,wlogout"
+        "$mod,Escape,exec,wlogout"
 
         # Focus: vim keys + arrows (as before)
         "$mod,H,movefocus,l"
@@ -166,6 +178,12 @@
 
         ",Print,exec,grimblast copy area"
         "$mod,Print,exec,grimblast copy screen"
+        "$mod SHIFT,S,exec,grimblast save area ~/Pictures/Screenshots/$(date +%Y%m%d_%H%M%S).png"
+
+        # Media keys
+        ",XF86AudioPlay,exec,playerctl play-pause"
+        ",XF86AudioNext,exec,playerctl next"
+        ",XF86AudioPrev,exec,playerctl previous"
       ];
 
       binde = [
@@ -205,8 +223,25 @@
       }
       windowrule {
         name = float-system-tools
-        match:class = ^(blueman-manager|nm-connection-editor)$
+        match:class = ^(blueman-manager|nm-connection-editor|pwvucontrol)$
         float = yes
+      }
+      windowrule {
+        name = float-tui-panels
+        match:title = ^(nmtui|bluetui)$
+        float = yes
+        center = yes
+        size = 700 500
+      }
+      windowrule {
+        name = kitty-opacity
+        match:class = ^(kitty)$
+        opacity = 1.0 0.85
+      }
+      windowrule {
+        name = immediate-fullscreen
+        match:fullscreen = 1
+        immediate = yes
       }
       windowrule {
         name = float-keepassxc
@@ -280,8 +315,18 @@
   };
 
   home.packages = with pkgs; [
+    # xdg-desktop-portal-gtk: the Hyprland HM module installs
+    # xdg-desktop-portal-hyprland into this same per-user profile. XDG_DATA_DIRS
+    # puts the user profile before the system one, and xdg-desktop-portal only
+    # scans the first directory it finds any *.portal file in — so without gtk's
+    # portal file living alongside hyprland's here, the daemon never discovers
+    # it at all (regardless of xdg.portal.config routing), and libadwaita apps
+    # (Nautilus) can't query dark-mode via the Settings portal.
+    xdg-desktop-portal-gtk
     grimblast
     wl-clipboard # screenshots + clipboard plumbing
+    wlogout # power/logout menu ($mod SHIFT,E / $mod,Escape)
+    playerctl # media key binds
     spotify # shows in DMS bar's media widget (MPRIS)
     nautilus
     keepassxc
