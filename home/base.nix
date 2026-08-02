@@ -21,6 +21,8 @@
       # Restore on a fresh machine: cp -r /etc/nixos/cosmic-snapshot ~/.config/cosmic
       cosmic-save = "cp -r ~/.config/cosmic /etc/nixos/cosmic-snapshot && git -C /etc/nixos add cosmic-snapshot";
       lg = "lazygit";
+    };
+    shellAliases = {
       cat = "bat";
       ls = "eza --icons";
       ll = "eza -la --icons";
@@ -38,10 +40,72 @@
     nix-direnv.enable = true;      # per-project dev shells via .envrc
   };
 
-  # ── Multiplexer: zellij (works out of the box, no plugin zoo) ─────────
-  programs.zellij = {
+  # ── Multiplexer: tmux ────────────────────────────────────────────────
+  # Declarative config — replaces ~/.tmux.conf.
+  programs.tmux = {
     enable = true;
-    settings.show_startup_tips = false;
+    prefix = "C-a";
+    baseIndex = 1;
+    escapeTime = 0;
+    terminal = "tmux-256color";
+    mouse = true;
+    keyMode = "vi";
+    extraConfig = ''
+      set -as terminal-features ",*:RGB"
+
+      # Kitty extended-keys protocol — without this, nushell/fish's
+      # use_kitty_protocol leaks raw escape sequences through tmux,
+      # breaking hjkl in copy-mode and C-hjkl pane nav.
+      set -g extended-keys on
+
+      # Kitty graphics protocol passthrough — required by molten-nvim
+      # (LazyVim/airgap) for inline plot rendering.
+      set -g allow-passthrough on
+
+      set -g renumber-windows on
+
+      set -g mode-keys vi
+      bind -T copy-mode-vi v   send -X begin-selection
+      bind -T copy-mode-vi V   send -X select-line
+      bind -T copy-mode-vi y   send -X copy-selection-and-cancel
+      bind -T copy-mode-vi Escape send -X cancel
+
+      bind | split-window -h -c "#{pane_current_path}"
+      bind - split-window -v -c "#{pane_current_path}"
+      unbind '"'
+      unbind %
+
+      bind h select-pane -L
+      bind j select-pane -D
+      bind k select-pane -U
+      bind l select-pane -R
+
+      set -g status-position top
+      set -g @catppuccin_flavor "mocha"
+
+      set -g @continuum-restore "on"
+      set -g @continuum-save-interval "15"
+      set -g @resurrect-capture-pane-contents "on"
+
+      # Smart-splits — cross Neovim <-> tmux pane navigation (unprefixed C-hjkl).
+      # Matches the <C-hjkl> keymaps in home/nixvim.nix's smart-splits section.
+      is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
+      bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h' 'select-pane -L'
+      bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j' 'select-pane -D'
+      bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k' 'select-pane -U'
+      bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l' 'select-pane -R'
+      bind-key -T copy-mode-vi 'C-h' select-pane -L
+      bind-key -T copy-mode-vi 'C-j' select-pane -D
+      bind-key -T copy-mode-vi 'C-k' select-pane -U
+      bind-key -T copy-mode-vi 'C-l' select-pane -R
+    '';
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      yank
+      resurrect
+      continuum
+      catppuccin
+    ];
   };
 
   # ── Git ────────────────────────────────────────────────────────────────

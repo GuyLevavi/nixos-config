@@ -332,6 +332,8 @@
     keepassxc
     opencode
     opencode-desktop # AI coding agent (TUI + desktop client)
+    obsidian
+    rclone # cloud sync — see rclone-bisync-* systemd services below
   ];
 
   # ── OpenCode ────────────────────────────────────────────────────────────
@@ -371,4 +373,27 @@
       };
     };
   };
+
+  # ── Cloud sync: Obsidian vault (rclone bisync) ─────────────────────────
+  # ~/GoogleDrive/Obsidian mirrors gdrive:Obsidian (just the vault, not the
+  # whole Drive — full-Drive bisync was too slow to be worth it). Remote
+  # "gdrive" is configured once, manually, via `rclone config` — OAuth can't
+  # be declared in Nix. First sync was a manual
+  # `rclone bisync gdrive:Obsidian ~/GoogleDrive/Obsidian --resync`
+  # (bisync's own safety requirement) — already done; the vault was moved
+  # here from OneDrive via `rclone copy`.
+  systemd.user.services.rclone-bisync-gdrive = {
+    Unit.Description = "Bisync ~/GoogleDrive/Obsidian with Google Drive remote";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.rclone}/bin/rclone bisync gdrive:Obsidian %h/GoogleDrive/Obsidian --conflict-resolve=newer --conflict-suffix=conflict";
+    };
+  };
+  systemd.user.timers.rclone-bisync-gdrive = {
+    Unit.Description = "Run rclone-bisync-gdrive every 5 minutes";
+    Timer = { OnBootSec = "2m"; OnUnitActiveSec = "5m"; };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
+  programs.fish.shellAbbrs.syncvault = "systemctl --user start rclone-bisync-gdrive";
 }
