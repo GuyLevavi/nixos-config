@@ -1,57 +1,57 @@
 {
-  description = "guy's nixos — Hyprland + DMS, minimal";
+  description = "cpubox / gpubox - Hyprland + Noctalia on NixOS";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Noctalia v5 is Beta — pin to a rev once happy so breakage is opt-in.
+    noctalia = {
+      url = "github:noctalia-dev/noctalia-shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }:
+  outputs =
+    { nixpkgs, home-manager, ... }@inputs:
     let
-      # One helper for both GUI hosts; only the host dir and home module differ.
-      mkHost = host: homeModule: nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/common.nix
-          ./hosts/${host}
-          home-manager.nixosModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              backupFileExtension = "backup";
-              users.gl.imports = [ homeModule ];
-            };
-          }
-        ];
-      };
+      system = "x86_64-linux";
+      username = "gl";
+
+      mkHost =
+        hostName:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          # exposes inputs/username/hostName as module arguments
+          specialArgs = { inherit inputs username hostName; };
+          modules = [
+            ./hosts/${hostName}
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                backupFileExtension = "hm-bak";
+                extraSpecialArgs = { inherit inputs username; };
+                users.${username} = import ./home;
+              };
+            }
+          ];
+        };
     in
     {
       nixosConfigurations = {
-        nixbox = mkHost "nixbox" ./home/gui.nix;
-        gamingbox = mkHost "gamingbox" ./home/gamingbox.nix;
-      };
-
-      # Headless, online — bare Ubuntu/Docker (Dockerfile.headless, scripts/test-smoke.sh).
-      homeConfigurations.wsl = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        modules = [ ./home/base.nix ];
-      };
-
-      # Headless, offline — built into a closure by scripts/build-airgap-closure.sh
-      # and imported on the airgapped work machine (WSL) via `nix copy`.
-      homeConfigurations.airgap = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        modules = [
-          ./home/base.nix
-          ./home/airgap.nix
-          {
-            nixpkgs.config.allowUnfree = true;
-          }
-        ];
+        cpubox = mkHost "cpubox";
+        gpubox = mkHost "gpubox";
       };
     };
 }
