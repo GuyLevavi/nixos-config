@@ -24,7 +24,7 @@ sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
 ## Architecture
 
 ```
-flake.nix                       # entry point — nixpkgs (unstable), home-manager, noctalia, nixvim
+flake.nix                       # entry point — nixpkgs (unstable), home-manager, noctalia, lazyvim
 hosts/
   cpubox/default.nix            # Intel laptop, integrated graphics only
   gpubox/default.nix            # + nvidia.nix (PRIME sync), Steam, gamemode
@@ -39,8 +39,8 @@ home/
   shell.nix                     # bash->fish exec, starship/zoxide/atuin/fzf, tmux, delta/lazygit/gh
   programs.nix                  # terminal, core CLI (ripgrep/bat/eza/fd/...), media tools
   zed.nix                       # Zed editor (LSPs, Catppuccin, format-on-save)
-  nixvim.nix                    # minimal Neovim (treesitter/LSP/telescope/blink-cmp/Catppuccin)
-  apps.nix                      # obsidian + rclone Google Drive bisync, ncspot
+  lazyvim.nix                   # declarative LazyVim (pfassina/lazyvim-nix), Noctalia-themed, nix+python extras
+  apps.nix                      # obsidian + rclone Google Drive bisync, spotify
   scripts.nix                   # rb / update / screen-record
 hypr/
   hyprland.conf, binds.conf, hypridle.conf   # edited live, NOT in the nix store
@@ -55,21 +55,21 @@ Full design rationale (ownership rules, ordering, gotchas) is in `README.md` —
 ### Desktop: Hyprland + Noctalia
 
 `programs.hyprland.enable = true` (with `withUWSM = true`) + `programs.noctalia.enable = true` + `services.greetd` in `modules/desktop.nix`. The Noctalia **user** service is enabled in `home/noctalia.nix` (`systemd.enable = true`), not the system one — do not flip both on.
-`hypr/hyprland.conf` and `hypr/binds.conf` are symlinked out-of-store from `/etc/nixos/hypr/` (see `home/default.nix`) — edit them directly and run `hyprctl reload`, no rebuild needed. This is the only part of the repo that works this way.
+`hypr/hyprland.conf` and `hypr/binds.conf` are symlinked out-of-store from `/etc/nixos/hypr/` (see `home/default.nix`) — edit them directly and run `hyprctl reload`, no rebuild needed. This is the only part of the repo that works this way. Two sourced files are runtime-written, not in the repo: `~/.config/hypr/noctalia.conf` (theme colours) and `~/.config/hypr/monitor-state.conf` (monitor-watch's eDP-1 disable).
 
 ### Theming: Noctalia owns it, not Nix
 
-Switching the palette in Noctalia's bar/settings writes GTK/Qt/ghostty/btop/helix/Firefox theme files at runtime (`SUPER+T` just opens the Noctalia settings window). `gtk.enable`/`qt.enable` are `false` and `programs.noctalia.settings = { }` on purpose — home-manager must never write those same files as read-only store symlinks. Do not add Stylix. See `README.md` "Who owns what" before changing this.
-Zed and nixvim are **not** Noctalia-templated — their Catppuccin Mocha theme is static, set in `home/zed.nix` / `home/nixvim.nix`. That's fine; the ownership rule only applies to files Noctalia actually rewrites.
+Switching the palette in Noctalia's bar/settings writes GTK/Qt/ghostty/btop/helix/Firefox theme files at runtime (`SUPER+T` just opens the Noctalia settings window). `gtk.enable`/`qt.enable` are `false` on purpose — home-manager must never write those same files as read-only store symlinks. Do not add Stylix. `programs.noctalia.settings` in `home/noctalia.nix` seeds `config.toml` (theme + template ids); the GUI's `~/.local/state/noctalia/settings.toml` still overrides per-key at runtime. See `README.md` "Who owns what" before changing this.
+LazyVim **is** Noctalia-templated: the community `neovim` template (enabled via `theme.templates.community_ids` in `home/noctalia.nix`) writes `~/.config/nvim/lua/matugen.lua` on every palette change and SIGUSR1s running instances; `home/lazyvim.nix` supplies the `base16-nvim` colorscheme that reads it. Zed is **not** — its Catppuccin Mocha theme is static in `home/zed.nix`. That's fine; the ownership rule only applies to files Noctalia actually rewrites.
 
 ### Shell: bash (login) + fish (interactive)
 
 `users.users.${username}.shell = pkgs.bash` in `modules/core.nix` — bash stays the process/login shell so scripts, `sudo -s`, systemd, etc. all keep POSIX semantics. `home/shell.nix` has bash `exec` into fish on every *interactive* start, guarded by a self-set `$BASH_EXECS_FISH` marker (not something fish exports itself) so that deliberately running `bash` from inside a fish session doesn't bounce you straight back. Non-interactive bash (`bash -c ...`) never hits that line.
 starship/zoxide/atuin/fzf all have first-class fish support in home-manager (`enableFishIntegration`) — no hand-rolled init file needed, unlike the xonsh setup this replaced.
 
-### Editors: Zed (GUI) + nixvim (terminal), both minimal
+### Editors: Zed (GUI) + LazyVim (terminal)
 
-Neither is an IDE. `home/nixvim.nix` is intentionally small (~100 lines: treesitter, 4 LSPs, telescope, blink-cmp, gitsigns) — the pre-rehaul NixVim config was a ~700-line full IDE setup; don't regrow this file back into that without being asked. `home/zed.nix` restores the pre-rehaul Zed settings verbatim (VSCode keymap, basedpyright/ruff/nixd, format-on-save).
+`home/zed.nix` restores the pre-rehaul Zed settings verbatim (VSCode keymap, basedpyright/ruff/nixd, format-on-save). `home/lazyvim.nix` uses the `pfassina/lazyvim-nix` flake (`programs.lazyvim`) instead of hand-rolled nixvim — it tracks upstream LazyVim releases and gives the full default plugin set (telescope, blink-cmp, gitsigns, which-key, session restore, conform.nvim autoformat — all LazyVim defaults, not configured here) for free. Keep `home/lazyvim.nix` itself minimal: extras + `extraPackages` + the base16/matugen colorscheme + autosave, nothing else — don't fight the "zero-config" model by re-adding keymaps/plugins LazyVim already ships. Pinned to a release tag in `flake.nix`, same pattern as Noctalia; bump with `nix flake lock --update-input lazyvim`.
 
 ### Adding packages
 

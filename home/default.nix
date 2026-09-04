@@ -6,12 +6,12 @@
 }:
 {
   imports = [
-    inputs.nixvim.homeModules.nixvim
+    inputs.lazyvim.homeManagerModules.default
     ./noctalia.nix
     ./programs.nix
     ./shell.nix
     ./zed.nix
-    ./nixvim.nix
+    ./lazyvim.nix
     ./apps.nix
     ./scripts.nix
   ];

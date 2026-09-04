@@ -12,6 +12,10 @@
       window-decoration = false;
       window-padding-x = 8;
       window-padding-y = 8;
+      # Paint padding + grid remainder by extending edge cells, or full-bg apps
+      # (nvim/btop) show theme-bg bands. Must be extend-always: plain "extend"
+      # refuses rows with powerline glyphs — i.e. nvim's lualine/bufferline.
+      window-padding-color = "extend-always";
       confirm-close-surface = false;
     };
   };
@@ -45,7 +49,7 @@
     unzip
     jq
     btop
-    helix # zero-config editor fallback next to nixvim
+    helix # zero-config editor fallback next to lazyvim
 
     # CLI (no home-manager module)
     fd

@@ -9,14 +9,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Noctalia v5 is Beta — pin to a rev once happy so breakage is opt-in.
+    # Pinned to a tag deliberately (v5.0.1 is the first stable release after
+    # 10 betas) — bump with `nix flake lock --update-input noctalia` so
+    # breakage is opt-in, not whatever lands on the default branch.
     noctalia = {
-      url = "github:noctalia-dev/noctalia-shell";
+      url = "github:noctalia-dev/noctalia/v5.0.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixvim = {
-      url = "github:nix-community/nixvim";
+    # Declarative LazyVim. Pinned to a LazyVim release tag the same way —
+    # bump with `nix flake lock --update-input lazyvim` when upstream cuts
+    # a new LazyVim release.
+    lazyvim = {
+      url = "github:pfassina/lazyvim-nix/v16.0.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -41,7 +46,7 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 backupFileExtension = "hm-bak";
-                extraSpecialArgs = { inherit inputs username; };
+                extraSpecialArgs = { inherit inputs username hostName; };
                 users.${username} = import ./home;
               };
             }

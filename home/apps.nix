@@ -3,7 +3,7 @@
   home.packages = with pkgs; [
     obsidian
     rclone
-    ncspot
+    spotify
   ];
 
   # Obsidian vault <-> Google Drive via rclone bisync.
