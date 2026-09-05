@@ -3,17 +3,13 @@
 # etc. are LazyVim defaults; don't re-add them here.
 { pkgs, lib, ... }:
 let
-  # Colorschemes Noctalia can select. tokyonight and catppuccin are omitted on
-  # purpose — LazyVim's own plugins/colorscheme.lua already ships both.
+  # tokyonight and catppuccin are omitted: LazyVim already ships both.
   #
-  # These are wired by absolute store path (`dir = ...`) instead of the usual
-  # "owner/repo" spec. lazyvim-nix scans ~/.config/nvim/lua/plugins for quoted
-  # "a/b" tokens (nix/lib/file-scanning.nix) and resolves them against
-  # pkgs.vimPlugins by name pattern. "rose-pine/neovim" resolves to
-  # vimPlugins.neovim and "Shatur/neovim-ayu" to vimPlugins.neovim_ayu —
-  # neither exists, so it falls back to builtins.fetchGit, which hard-errors
-  # under the flake's pure evaluation. A store path holds no bare "a/b" token,
-  # so nothing is resolved and lazy.nvim loads each plugin from the store.
+  # Wired by store path, NOT "owner/repo". lazyvim-nix scans the plugins dir
+  # for quoted "a/b" tokens and resolves them against pkgs.vimPlugins by name;
+  # "rose-pine/neovim" and "Shatur/neovim-ayu" resolve to attrs that don't
+  # exist and fall through to builtins.fetchGit, which fails under pure eval.
+  # The scan reads the *previous* generation, so that breaks one rebuild late.
   colorschemes = {
     gruvbox = pkgs.vimPlugins.gruvbox-nvim;
     kanagawa = pkgs.vimPlugins.kanagawa-nvim;
@@ -53,17 +49,9 @@ in
       pkgs.statix
     ];
 
-    # Noctalia picks the colorscheme *plugin*, not the colours. Its
-    # colors_changed/theme_mode_changed/started hooks (home/noctalia.nix) run a
-    # script that writes the file read below. Every scheme is then the real,
-    # hand-tuned plugin by its own author rather than a matugen palette forced
-    # into base16's sixteen semantic slots — that mapping put green in base09
-    # (constants/orange) and blue in base0B (strings/green), which is why it
-    # never looked right.
-    #
-    # No live reload on purpose: ghostty needs a restart on palette change too,
-    # so nvim just reads this at startup. That drops the SIGUSR1 handler the
-    # old community "neovim" template needed (and never actually had wired up).
+    # Noctalia picks the colorscheme *plugin*, not the colours: its hooks
+    # (home/noctalia.nix) write the file read below. No live reload — like
+    # ghostty, nvim picks it up on restart.
     plugins.colorscheme = ''
       return {
       ${colorschemeSpecs}

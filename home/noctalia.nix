@@ -55,10 +55,8 @@ let
   };
   syncNvimTheme = lib.getExe nvimThemeSync;
 
-  # Every island shares one material, so define it once. Change the fill or the
-  # opacity here and all five move together; `padding = 6` is also what
-  # capsule_radius is derived from (see the concentric-radius note below), so
-  # the two must be edited as a pair.
+  # One material for all five islands. `padding` here feeds capsule_radius
+  # (concentric rule: 8 - 6 = 2), so edit the two together.
   mkGroup = id: members: {
     inherit id members;
     fill = "surface";
@@ -83,50 +81,30 @@ in
     # edits here look like they did nothing. Strip that section from
     # settings.toml after changing bar geometry.
     settings = {
-      # Glassy islands on an invisible strip: each lane is one shared capsule
-      # at 0.85 — the same frosted material as inactive windows
-      # (hypr/hyprland.conf inactive_opacity + the noctalia blur layerrule).
-      # The layerrule MUST match "noctalia-bar-.*" (the real namespace),
-      # not "noctalia" alone, or blur silently never applies to the bar.
-      #
-      # Geometry runs on two constants, and which one applies is meaningful:
-      #   4 = ALIGNMENT. Things that should sit on the same grid line as window
-      #       content: margin_edge, this bar's `padding`, and gaps_out in
-      #       hypr/hyprland.conf (with gaps_in=2, since gaps_in is a half-gap).
-      #       Measured result: the leftmost island's left edge and the window
-      #       frame's left edge both land on logical x = 4.
-      #   8 = SEPARATION. Things that should read as distinctly apart:
-      #       widget_spacing (island-to-island), margin_opposite_edge
-      #       (bar-to-window), decoration.rounding, and the island radius.
-      # So 4 never separates and 8 never aligns. Do not collapse them back into
-      # one number -- that is what made the bar read as a single dark slab.
-      # margin_ends and padding STACK on the main axis, so the outermost island
-      # sits at margin_ends + padding from the screen edge — margin_ends must
-      # be 0 for that to come out at 4. Zeroing it costs nothing visually since
-      # background_opacity is 0, and it leaves the whole strip right-clickable.
+      # Two constants, and which one applies is the whole design:
+      #   4 = ALIGNMENT — margin_edge, padding, and hyprland's gaps_out. Island
+      #       outer edges land on the same logical x as window frames.
+      #   8 = SEPARATION — widget_spacing, margin_opposite_edge (bar-to-window),
+      #       rounding, island radius.
+      # Don't collapse them into one number; at a uniform 4 the bar read as a
+      # single dark slab. margin_ends and padding STACK on the main axis, so
+      # margin_ends must be 0 for the outermost island to land at 4.
       bar.default = {
         background_opacity = 0.0;
         shadow = false; # a bar-wide shadow rect was the real source of "haze" in the gaps, not blur
         margin_edge = 4;
         margin_ends = 0;
-        # The ONE deliberate exception to the 4px rule, and it is a perceptual
-        # fix rather than a geometric one. This adds to the layer's exclusive
-        # zone without moving the bar surface, so the bar-to-window gap becomes
-        # margin_opposite_edge + gaps_out = 8 (the separation constant) while
-        # every window-to-window gap stays 4. Two reasons for the break: (a) chrome-to-content deserves a
-        # louder separator than content-to-content, and (b) at 4px the window
-        # shadow (hyprland.conf range = 12, ramping ~5px) swallowed the gap
-        # whole -- measured peak brightness in the band was 75% of the wallpaper
-        # at 0, 89% at 2, and 97% at 4, which is the first value where actual
-        # wallpaper reads as wallpaper instead of shadow murk.
+        # Adds to the exclusive zone without moving the bar surface, making
+        # bar-to-window 8. Needed because the window shadow ramps ~5px and
+        # swallowed a 4px gap entirely (75% of wallpaper brightness at 0, 97%
+        # at 4). Noctalia's own shadow/contact_shadow cannot substitute — see
+        # CLAUDE.md; they draw nothing under the islands.
         margin_opposite_edge = 4;
         concave_edge_corners = false; # needs margin_edge = 0, which we float past
         thickness = 30; # stock default is 34; compact DMS-style footprint
         padding = 4; # lane inset: keeps island outer edges on the window grid
-        # One knob for BOTH island-to-island and widget-to-widget gaps -- there
-        # is no separate group-spacing key, so raising this lets the whole bar
-        # breathe at once. 4 had the islands nearly touching and reading as one
-        # slab; 8 separates them without the loose feel 12/16 give.
+        # One knob for both island-to-island and widget-to-widget gaps; there
+        # is no separate group-spacing key.
         widget_spacing = 8;
         # stock 0.76 leaves the islands floating inside the strip; 1.0 puts
         # their top edge exactly at margin_edge so the 4px system holds
@@ -231,11 +209,8 @@ in
             "qt"
             "starship"
           ];
-          # The community "neovim" template used to live here. It rendered a
-          # matugen palette into base16-nvim's sixteen semantic slots, which
-          # collapses: base09 (constants/orange) came out green, base0B
-          # (strings/green) came out blue, and functions/keywords/types all
-          # landed on near-identical blue-purples. Replaced by the hooks above.
+          # No "neovim" template: a tonal palette has one hue and base16 needs
+          # eight. The hooks above pick a real colorscheme plugin instead.
           community_ids = [ ];
         };
       };
