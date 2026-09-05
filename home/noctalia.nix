@@ -81,33 +81,24 @@ in
     # edits here look like they did nothing. Strip that section from
     # settings.toml after changing bar geometry.
     settings = {
-      # Two constants, and which one applies is the whole design:
-      #   4 = ALIGNMENT — margin_edge, padding, and hyprland's gaps_out. Island
-      #       outer edges land on the same logical x as window frames.
-      #   8 = SEPARATION — widget_spacing, margin_opposite_edge (bar-to-window),
-      #       rounding, island radius.
-      # Don't collapse them into one number; at a uniform 4 the bar read as a
-      # single dark slab. margin_ends and padding STACK on the main axis, so
-      # margin_ends must be 0 for the outermost island to land at 4.
+      # One constant, 8, shared with gaps_out in hypr/hyprland.conf: islands
+      # sit 8 from the screen edges (margin_edge / padding), 8 apart
+      # (widget_spacing), and 8 above the windows. That last one is free —
+      # the exclusive zone ends at the bar, so gaps_out supplies the gap.
+      # margin_ends and padding STACK on the main axis, so margin_ends stays 0.
       bar.default = {
         background_opacity = 0.0;
         shadow = false; # a bar-wide shadow rect was the real source of "haze" in the gaps, not blur
-        margin_edge = 4;
+        margin_edge = 8;
         margin_ends = 0;
-        # Adds to the exclusive zone without moving the bar surface, making
-        # bar-to-window 8. Needed because the window shadow ramps ~5px and
-        # swallowed a 4px gap entirely (75% of wallpaper brightness at 0, 97%
-        # at 4). Noctalia's own shadow/contact_shadow cannot substitute — see
-        # CLAUDE.md; they draw nothing under the islands.
-        margin_opposite_edge = 4;
         concave_edge_corners = false; # needs margin_edge = 0, which we float past
         thickness = 30; # stock default is 34; compact DMS-style footprint
-        padding = 4; # lane inset: keeps island outer edges on the window grid
+        padding = 8; # lane inset: keeps island outer edges on the window grid
         # One knob for both island-to-island and widget-to-widget gaps; there
         # is no separate group-spacing key.
         widget_spacing = 8;
         # stock 0.76 leaves the islands floating inside the strip; 1.0 puts
-        # their top edge exactly at margin_edge so the 4px system holds
+        # their top edge exactly at margin_edge, on the grid
         capsule_thickness = 1.0;
         # Not just for capsule mode — Noctalia also uses this for the workspace
         # pills nested inside the left island. Concentric radius: the island is
@@ -180,12 +171,11 @@ in
         network.show_label = false;
       };
 
-      # Concentric radius again: windows are rounding = 8 sitting 4 inside the
-      # screen, so the screen's own corner is 8 + 4. Noctalia's default of 32
-      # would be badly wrong here.
+      # Concentric radius: windows are rounding = 8 sitting 8 inside the
+      # screen, so the screen's own corner is 8 + 8.
       shell.screen_corners = {
         enabled = true;
-        size = 12;
+        size = 16;
       };
 
       # Noctalia picks the colorscheme *plugin* nvim uses. `started` covers a
