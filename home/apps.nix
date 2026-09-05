@@ -11,7 +11,14 @@
   # can't be declared here), then a first `rclone bisync gdrive:Obsidian
   # ~/GoogleDrive/Obsidian --resync`.
   systemd.user.services.rclone-bisync-gdrive = {
-    Unit.Description = "Bisync ~/GoogleDrive/Obsidian with Google Drive remote";
+    Unit = {
+      Description = "Bisync ~/GoogleDrive/Obsidian with Google Drive remote";
+      # Without this the timer fails every 5 minutes on a machine where the
+      # one-time `rclone config` above hasn't been done yet (fresh install, or
+      # the other host). A failed Condition makes systemd skip the run silently
+      # instead, and the unit starts working on its own once the file appears.
+      ConditionPathExists = "%h/.config/rclone/rclone.conf";
+    };
     Service = {
       Type = "oneshot";
       ExecStart = "${pkgs.rclone}/bin/rclone bisync gdrive:Obsidian %h/GoogleDrive/Obsidian --conflict-resolve=newer --conflict-suffix=conflict";

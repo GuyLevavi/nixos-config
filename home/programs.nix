@@ -18,9 +18,10 @@
       # deliberate padding, so text doesn't sit flush against the screen edge.
       window-padding-x = 2;
       window-padding-y = 0;
-      # Flat fill, not extend: this theme's background already equals nvim's
-      # own editor bg (both #0b0e14, matugen-driven), so a flat fill is a
-      # perfect blend. "extend[-always]" instead duplicates the *nearest grid
+      # Flat fill, not extend: Noctalia's ghostty template and nvim's colorscheme
+      # are driven from the same palette choice, so their backgrounds agree
+      # (measured #1a1b26 on both under Tokyo-Night) and a flat fill blends
+      # perfectly. "extend[-always]" instead duplicates the *nearest grid
       # row* — when that row is a status line (lualine), it smears a second
       # fake copy of the status line's own colour into the padding.
       window-padding-color = "background";

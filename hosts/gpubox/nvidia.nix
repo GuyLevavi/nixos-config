@@ -4,8 +4,6 @@
   ...
 }:
 {
-  nixpkgs.config.allowUnfree = true; # scoped to this host; cpubox stays free
-
   services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {

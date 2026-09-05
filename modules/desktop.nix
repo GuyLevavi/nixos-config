@@ -53,6 +53,17 @@
     };
   };
 
+  # No driver packages pinned: modern printers are driverless IPP/AirPrint and
+  # CUPS finds them over mDNS. Add to services.printing.drivers only if some
+  # older model actually needs a PPD. NOTE: openFirewall here opens UDP 5353
+  # for mDNS discovery — that is the only port this config opens.
+  services.printing.enable = true;
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+
   services.gvfs.enable = true; # Nautilus: mount drives
   services.tumbler.enable = true; # Nautilus: thumbnails
 
