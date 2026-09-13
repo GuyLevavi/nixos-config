@@ -81,6 +81,15 @@
         sidebar_side = "right"; # the panel's threads sidebar
         # Auto-approve tool calls (incl. terminal commands) without prompting.
         tool_permissions.default = "allow";
+        # The message input box is monospace (like the editor); bump from 12 to
+        # match buffer_font_size so typing doesn't feel cramped.
+        agent_buffer_font_size = 16;
+      };
+      # Built-in which-key: holds a key combo briefly → shows available
+      # follow-up keys. Handy for discovering vim/bindings as you go.
+      which_key = {
+        enabled = true;
+        delay_ms = 500;
       };
       tab_bar = {
         show_nav_history_buttons = false;
