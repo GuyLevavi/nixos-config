@@ -54,10 +54,11 @@
     unzip
     jq
     btop
-    helix # zero-config editor fallback next to lazyvim
+    helix # zero-config terminal editor fallback
 
     # CLI (no home-manager module)
     fd
+    bubblewrap # bwrap — zed's agent uses it to sandbox terminal commands
     dust
     yazi
     podman-compose
@@ -68,5 +69,6 @@
     uv
     nodejs
     claude-code
+    opencode
   ];
 }

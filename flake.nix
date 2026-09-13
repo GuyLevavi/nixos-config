@@ -17,13 +17,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Declarative LazyVim. Pinned to a LazyVim release tag the same way —
-    # bump with `nix flake lock --update-input lazyvim` when upstream cuts
-    # a new LazyVim release.
-    lazyvim = {
-      url = "github:pfassina/lazyvim-nix/v16.0.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =

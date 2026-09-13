@@ -3,9 +3,9 @@
 Two laptops, one repo. Hyprland + Noctalia, no dotfile framework. Lives at
 `/etc/nixos`.
 
-| host | graphics |
-|---|---|
-| `cpubox` | integrated only |
+| host     | graphics                                            |
+| -------- | --------------------------------------------------- |
+| `cpubox` | integrated only                                     |
 | `gpubox` | hybrid iGPU + NVIDIA, PRIME sync (Steam lives here) |
 
 The only difference between them is one extra import.
@@ -27,7 +27,6 @@ home/
   shell.nix            bash->fish, starship/zoxide/atuin/fzf, tmux, delta/lazygit/gh
   programs.nix         terminal, core CLI, media tools
   zed.nix              Zed editor
-  lazyvim.nix          declarative LazyVim (pfassina/lazyvim-nix)
   apps.nix             obsidian + gdrive sync, spotify
   scripts.nix          rb / update / screen-record / monitor-watch
 hypr/
@@ -65,12 +64,14 @@ machinery because there is no accumulated state to repair.
 
 **Noctalia owns** the theme. When you switch palette in its bar/settings
 (`SUPER+T` opens that window) it writes `~/.config/gtk-3.0/`, `gtk-4.0/`,
-`qt6ct/`, the ghostty colours, btop, starship, the Firefox chrome, and
-`~/.config/nvim/lua/matugen.lua` — so LazyVim follows palette switches live
-(the `base16-nvim` half lives in `home/lazyvim.nix`). Those files are mutable
-state outside Nix, on purpose, because a build-time theming system cannot
-switch at runtime. Zed sits outside this system — its Catppuccin Mocha theme
-is static in `home/zed.nix` and doesn't move when you switch.
+`qt6ct/`, the ghostty colours, btop, starship, and the Firefox chrome. Those
+files are mutable state outside Nix, on purpose, because a build-time theming
+system cannot switch at runtime. Zed sits outside the template system (there
+is no Noctalia template for it) but follows anyway: a Noctalia hook
+(`home/noctalia.nix`) rewrites the `theme` block of `~/.config/zed/settings.json`
+on every palette or light/dark switch and Zed live-reloads the file. The
+palette-to-theme map and the theme extensions it needs are in `home/zed.nix`;
+non-builtin palettes fall back to Catppuccin Mocha/Latte.
 
 Consequences, enforced in `home/default.nix`:
 
@@ -81,6 +82,10 @@ Consequences, enforced in `home/default.nix`:
   with the theme + template ids only. The GUI writes its own
   `~/.local/state/noctalia/settings.toml`, which overrides per-key — both
   layers coexist, so the settings GUI keeps working.
+- Zed's `settings.json` is co-owned: home-manager deep-merges `home/zed.nix`
+  over the live file on every `rb` (Nix wins per key, so GUI edits to Nix
+  keys revert; other keys persist). Sign-in is unaffected — credentials live
+  in gnome-keyring, not in that file.
 
 **You own** `hypr/`. Those three files are symlinked out of the store into
 `/etc/nixos/hypr/`, so editing a keybind and running `hyprctl reload` is
@@ -101,14 +106,12 @@ by Noctalia and monitor-watch respectively — and deliberately not in the repo.
 - **Firefox theming** needs
   `toolkit.legacyUserProfileCustomizations.stylesheets = true` in `about:config`
   before the userChrome colours apply. It fails silently otherwise.
-- **Noctalia and LazyVim are both pinned to tags** in `flake.nix` (not the
-  default branch), on purpose — an update can rename an IPC verb and break a
-  `hypr/binds.conf` line, or ship a LazyVim plugin regression. Bump each
-  input deliberately (`nix flake lock --update-input noctalia` /
-  `...--update-input lazyvim`) so breakage arrives only when you ask for it.
-  Fixing a broken bind is editing `hypr/binds.conf`, not rebuilding your
-  setup — which is the entire point of keeping the shell rented and the
-  owned surface thin.
+- **Noctalia is pinned to a tag** in `flake.nix` (not the default branch), on
+  purpose — an update can rename an IPC verb and break a `hypr/binds.conf`
+  line. Bump the input deliberately (`nix flake lock --update-input noctalia`)
+  so breakage arrives only when you ask for it. Fixing a broken bind is
+  editing `hypr/binds.conf`, not rebuilding your setup — which is the entire
+  point of keeping the shell rented and the owned surface thin.
 - **gpubox uses PRIME sync, not offload.** The dGPU is always rendering (no
   `nvidia-offload` wrapper needed, better sustained gaming perf) instead of
   sleeping when idle — you trade battery for that. CUDA and the airgap/work

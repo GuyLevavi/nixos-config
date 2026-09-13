@@ -87,11 +87,19 @@ in
 
     gvfs.enable = true; # Nautilus: mount drives
     tumbler.enable = true; # Nautilus: thumbnails
+
+    # Secret Service provider. Zed stores sign-in/provider credentials via
+    # org.freedesktop.secrets — with no keyring daemon running, sign-in works
+    # but is gone on the next app start. Not a settings.json thing.
+    gnome.gnome-keyring.enable = true;
   };
 
   # tuigreet's cache dir (greetd above) and pipewire's realtime priority.
   systemd.tmpfiles.rules = [ "d /var/cache/tuigreet 0755 greeter greeter - -" ];
   security.rtkit.enable = true;
+  # Unlock the login keyring with the login password at greetd entry, so apps
+  # hitting org.freedesktop.secrets never prompt.
+  security.pam.services.greetd.enableGnomeKeyring = true;
 
   fonts = {
     packages = with pkgs; [

@@ -6,54 +6,63 @@
   ...
 }:
 let
-  # Noctalia picks *which colorscheme plugin* nvim uses, not its colours. Run
-  # from the hooks below; the reading half is home/lazyvim.nix.
-  nvimThemeSync = pkgs.writeShellApplication {
-    name = "noctalia-nvim-theme";
-    runtimeInputs = [ config.programs.noctalia.package ];
+  # Zed has no Noctalia template, so the palette reaches it here: the hooks
+  # below rewrite the theme block of ~/.config/zed/settings.json (mutable,
+  # live-reloaded by zed). Theme-name granularity — the zed-side seed and the
+  # extensions those names come from are in home/zed.nix.
+  zedThemeSync = pkgs.writeShellApplication {
+    name = "noctalia-zed-theme";
+    runtimeInputs = [
+      pkgs.jq
+      config.programs.noctalia.package
+    ];
     text = ''
-      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/noctalia"
-      out="$state_dir/nvim-theme.lua"
-
-      # "<source> <name>", e.g. "builtin Tokyo-Night". Empty when the IPC
-      # socket isn't up yet, in which case the fallbacks below stand.
+      # "<source> <name>", e.g. "builtin Catppuccin". Empty when the IPC
+      # socket isn't up (tty, ssh, early boot) — then leave the file alone.
       line="$(noctalia msg color-scheme-get 2>/dev/null || true)"
+      [ -n "$line" ] || exit 0
       scheme_source="''${line%% *}"
       scheme_name="''${line#* }"
 
       mode="$(noctalia msg theme-mode-get 2>/dev/null || true)"
       [ "$mode" = "light" ] || mode="dark"
 
-      dark="tokyonight-night"
-      light="tokyonight-day"
-
-      # Only builtins map; wallpaper/community/custom palettes have no
-      # equivalent plugin and keep the tokyonight fallback. Nord, Dracula and
-      # Eldritch have no light variant upstream, so they fall back in light.
+      # Fallback matches theme.builtin below. Only builtins map — wallpaper/
+      # community/custom palettes keep the fallback.
+      dark="Catppuccin Mocha"
+      light="Catppuccin Latte"
       if [ "$scheme_source" = "builtin" ]; then
         case "$scheme_name" in
-          "Tokyo-Night") dark="tokyonight-night"; light="tokyonight-day" ;;
-          "Catppuccin")  dark="catppuccin-mocha"; light="catppuccin-latte" ;;
-          "Gruvbox")     dark="gruvbox";          light="gruvbox" ;;
-          "Kanagawa")    dark="kanagawa-wave";    light="kanagawa-lotus" ;;
-          "Rosé Pine")   dark="rose-pine-main";   light="rose-pine-dawn" ;;
-          "Ayu")         dark="ayu-dark";         light="ayu-light" ;;
-          "Nord")        dark="nord";             light="tokyonight-day" ;;
-          "Dracula")     dark="dracula";          light="tokyonight-day" ;;
-          "Eldritch")    dark="eldritch";         light="tokyonight-day" ;;
+          "Tokyo-Night") dark="Tokyo Night";      light="Tokyo Night Light" ;;
+          "Catppuccin")  dark="Catppuccin Mocha"; light="Catppuccin Latte" ;;
+          "Gruvbox")     dark="Gruvbox Dark";     light="Gruvbox Light" ;;
+          "Kanagawa")    dark="Kanagawa Wave";    light="Kanagawa Lotus" ;;
+          "Rosé Pine")   dark="Rosé Pine";        light="Rosé Pine Dawn" ;;
+          "Ayu")         dark="Ayu Dark";         light="Ayu Light" ;;
+          "Nord")        dark="Nord Dark";        light="Nord Light" ;;
+          "Dracula")     dark="Dracula";          light="Dracula Light (Alucard)" ;;
+          "Eldritch")    dark="Eldritch";         light="Eldritch Dusk" ;;
           *) ;;
         esac
       fi
 
-      if [ "$mode" = "light" ]; then scheme="$light"; else scheme="$dark"; fi
+      cfg="''${XDG_CONFIG_HOME:-$HOME/.config}/zed/settings.json"
+      mkdir -p "$(dirname "$cfg")"
+      [ -f "$cfg" ] || printf '{}\n' >"$cfg"
 
-      mkdir -p "$state_dir"
-      # write-then-rename so nvim never dofile()s a half-written file
-      printf 'return { colorscheme = "%s", background = "%s" }\n' "$scheme" "$mode" >"$out.tmp"
-      mv -f "$out.tmp" "$out"
+      # No-op when already in sync — every write triggers a zed settings reload.
+      if jq -e --arg d "$dark" --arg l "$light" --arg m "$mode" \
+        '.theme.mode == $m and .theme.dark == $d and .theme.light == $l' "$cfg" >/dev/null 2>&1; then
+        exit 0
+      fi
+
+      # write-then-rename so zed never reads a half-written file
+      jq --arg d "$dark" --arg l "$light" --arg m "$mode" \
+        '.theme = {mode: $m, dark: $d, light: $l}' "$cfg" >"$cfg.tmp"
+      mv -f "$cfg.tmp" "$cfg"
     '';
   };
-  syncNvimTheme = lib.getExe nvimThemeSync;
+  syncZedTheme = lib.getExe zedThemeSync;
 
   # One material for all five islands. `padding` here feeds capsule_radius
   # (concentric rule: 8 - 6 = 2), so edit the two together.
@@ -234,17 +243,17 @@ in
         };
       };
 
-      # Noctalia picks the colorscheme *plugin* nvim uses. `started` covers a
-      # fresh login even when the palette never changes; the other two cover
-      # palette and light/dark switches. See home/lazyvim.nix for the reader.
+
+      # Zed follows the palette through zedThemeSync (above); `started`
+      # covers a fresh login where the palette never changes.
       hooks = {
-        started = [ syncNvimTheme ];
-        colors_changed = [ syncNvimTheme ];
-        theme_mode_changed = [ syncNvimTheme ];
+        started = [ syncZedTheme ];
+        colors_changed = [ syncZedTheme ];
+        theme_mode_changed = [ syncZedTheme ];
       };
 
       theme = {
-        builtin = "Tokyo-Night";
+        builtin = "Catppuccin";
         templates = {
           builtin_ids = [
             "btop"
@@ -255,11 +264,18 @@ in
             "qt"
             "starship"
           ];
-          # No "neovim" template: a tonal palette has one hue and base16 needs
-          # eight. The hooks above pick a real colorscheme plugin instead.
+          # zed is synced by the hooks above instead of a template.
           community_ids = [ ];
         };
       };
     };
   };
+
+  # A rebuild re-seeds settings.json from home/zed.nix (Nix wins the merge)
+  # and `started` doesn't fire on an already-running session — re-sync here so
+  # the palette survives `rb` without a re-login. The script no-ops when the
+  # noctalia IPC is down.
+  home.activation.zedThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
+    run ${syncZedTheme} || true
+  '';
 }

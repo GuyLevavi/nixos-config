@@ -1,17 +1,14 @@
 {
   config,
-  inputs,
   username,
   ...
 }:
 {
   imports = [
-    inputs.lazyvim.homeManagerModules.default
     ./noctalia.nix
     ./programs.nix
     ./shell.nix
     ./zed.nix
-    ./lazyvim.nix
     ./apps.nix
     ./scripts.nix
   ];

@@ -7,14 +7,22 @@
     # The guard is the *parent process*, not an exported marker. The marker this
     # used to use (BASH_EXECS_FISH=1, set just before the exec) was inherited by
     # every descendant of the fish session, so anything that later spawned
-    # $SHELL from inside it — nvim's `:terminal`, a tmux pane, anything started
-    # from an already-fish terminal — found the marker set and stayed in bare
-    # bash: no starship, no aliases, no atuin. Parent-is-fish is the one case
-    # that must not bounce back: you typed `bash` at a fish prompt and meant it.
+    # $SHELL from inside it — an editor's integrated terminal, a tmux pane,
+    # anything started from an already-fish terminal — found the marker set and
+    # stayed in bare bash: no starship, no aliases, no atuin. Parent-is-fish is
+    # the one case that must not bounce back: you typed `bash` at a fish prompt
+    # and meant it.
+    #
+    # The -t checks keep GUI tools alive: Zed captures its environment by
+    # spawning `bash -l -i -c` with no terminal attached, and an unconditional
+    # exec replaces bash before the -c command runs — fish starts reading stdin
+    # instead, the capture finds no JSON, and every worktree loses its PATH
+    # (nixd "not available in your environment"). No tty -> stay in bash and
+    # let the capture command run.
     bash = {
       enable = true;
       initExtra = ''
-        if [[ $- == *i* ]] &&
+        if [[ $- == *i* ]] && [[ -t 0 && -t 1 ]] &&
           [[ "$(${pkgs.procps}/bin/ps -o comm= -p $PPID 2>/dev/null)" != fish ]]; then
           exec ${pkgs.fish}/bin/fish
         fi
