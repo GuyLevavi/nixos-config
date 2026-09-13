@@ -178,6 +178,62 @@ in
         size = 16;
       };
 
+      # Idle policy — Noctalia's own daemon, which replaced hypridle. Every
+      # action hypridle took was already a Noctalia one (`noctalia msg session
+      # lock`, dpms), so it was a timer wrapped around this; running the timer
+      # in-process also removes the logind `Lock` round trip that used to let
+      # lock_cmd re-enter itself. Lock-before-suspend needs no key here:
+      # Noctalia takes a logind sleep-delay inhibit on PrepareForSleep and
+      # locks first, which covers lid close and `systemctl suspend` too.
+      #
+      # GOTCHA, same as [bar.default] above: opening Settings → Idle in the GUI
+      # copies this whole table into ~/.local/state/noctalia/settings.toml,
+      # which then shadows everything below.
+      idle = {
+        # Fades a fullscreen overlay in over this many seconds before the
+        # action, cancelling on any input. This is what replaces hypridle's
+        # 150s `brightnessctl -s set 10` dim-as-warning listener — and the
+        # reason that listener could not just be ported as a custom behavior:
+        # the fade is global, so the dim would have drawn an overlay over
+        # itself.
+        pre_action_fade_seconds = 3.0;
+
+        behavior = {
+          # Long timeouts on purpose: this box is left running unattended
+          # overnight and through the workday so a phone can reach the
+          # sessions on it. Locking is free — it hides the screen without
+          # touching anything underneath. Suspending is not, which is why
+          # there is no enabled suspend behavior below.
+          lock = {
+            enabled = true;
+            action = "lock";
+            timeout = 1800; # 30 min
+          };
+
+          # `locked_timeout` is a second, shorter timeout that applies only
+          # once the session is already locked — so an unattended machine
+          # blanks 2 min after locking rather than sitting lit for another 40.
+          "screen-off" = {
+            enabled = true;
+            action = "screen_off";
+            timeout = 2400; # 40 min while unlocked
+            locked_timeout = 120; # 2 min once locked
+          };
+
+          # Declared and off. Flipping `enabled` is the single edit that stops
+          # this machine answering the phone, so it stays visible here rather
+          # than being an absent stanza nobody remembers deciding against. The
+          # battery backstop is logind's HandleLidSwitch = "suspend"
+          # (modules/laptop.nix), which still fires on lid close off AC — on
+          # AC it is "ignore", so the lid can stay shut overnight.
+          suspend = {
+            enabled = false;
+            action = "lock_and_suspend";
+            timeout = 7200; # 2 h, if ever turned back on
+          };
+        };
+      };
+
       # Noctalia picks the colorscheme *plugin* nvim uses. `started` covers a
       # fresh login even when the palette never changes; the other two cover
       # palette and light/dark switches. See home/lazyvim.nix for the reader.

@@ -5,10 +5,14 @@
   ...
 }:
 {
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.configurationLimit = 10;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.tmp.cleanOnBoot = true; # /tmp otherwise accumulates across reboots
+  boot = {
+    loader = {
+      systemd-boot.enable = true;
+      systemd-boot.configurationLimit = 10;
+      efi.canTouchEfiVariables = true;
+    };
+    tmp.cleanOnBoot = true; # /tmp otherwise accumulates across reboots
+  };
 
   # gpubox has swapDevices = [ ] and cpubox's is a slow disk partition, so give
   # the kernel a compressed in-RAM pressure valve on both. Without any swap a

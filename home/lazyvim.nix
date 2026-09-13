@@ -31,6 +31,15 @@ in
     enable = true;
 
     extras = {
+      # render-markdown.nvim (in-buffer tables/headings/code blocks, `<leader>um`
+      # toggles it), marksman, markdown-preview. installDependencies pulls
+      # markdownlint-cli2 + markdown-toc, the runtime ones pull node — which
+      # markdown-preview's server also needs.
+      lang.markdown = {
+        enable = true;
+        installDependencies = true;
+        installRuntimeDependencies = true;
+      };
       lang.nix.enable = true;
       lang.python = {
         enable = true;
@@ -43,10 +52,14 @@ in
     # manual, and so are the formatter/linter its extras/lang/nix.lua expects
     # on PATH (nixfmt, statix) — LazyVim's default nil_ls LSP is swapped for
     # nixd here, but the formatter/linter aren't swappable, just missing deps.
+    #
+    # lang.markdown's LSP (marksman: link/heading completion, workspace
+    # symbols, rename across notes) is a manual dep the same way.
     extraPackages = [
       pkgs.nixd
       pkgs.nixfmt
       pkgs.statix
+      pkgs.marksman
     ];
 
     # Noctalia picks the colorscheme *plugin*, not the colours: its hooks
@@ -74,6 +87,34 @@ in
               end
             end,
           },
+        },
+      }
+    '';
+
+    # Two fixes to what lang.markdown ships. Both specs name the plugin *without*
+    # the owner prefix: the user-plugin scan only picks up quoted "owner/repo"
+    # tokens, and lazy.nvim merges a bare name into the spec the extra already
+    # declared — so this overrides rather than declaring a second copy.
+    plugins.markdown = ''
+      return {
+        {
+          -- LazyVim turns off the glyph-dependent parts of the renderer; the
+          -- terminal font has them, so turn checkboxes back on and round the
+          -- table borders. Everything else is render-markdown's default.
+          "render-markdown.nvim",
+          opts = {
+            checkbox = { enabled = true },
+            pipe_table = { preset = "round" },
+          },
+        },
+        {
+          -- The from-source build has no app/node_modules, and LazyVim's build
+          -- step (mkdp#util#install) would try to write them into the read-only
+          -- store. The nixpkgs copy ships them prebuilt, and mkdp falls back to
+          -- running that server under `node` when there's no pre-built binary.
+          "markdown-preview.nvim",
+          dir = "${pkgs.vimPlugins.markdown-preview-nvim}",
+          build = false,
         },
       }
     '';

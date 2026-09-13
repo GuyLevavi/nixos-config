@@ -33,7 +33,6 @@ home/
 hypr/
   hyprland.conf        edited live, NOT in the nix store
   binds.conf
-  hypridle.conf
 ```
 
 Roughly 1000 lines including hardware configs, a third of it hyprland config

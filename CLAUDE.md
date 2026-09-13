@@ -43,7 +43,7 @@ home/
   apps.nix                      # obsidian + rclone Google Drive bisync, spotify
   scripts.nix                   # rb / update / screen-record
 hypr/
-  hyprland.conf, binds.conf, hypridle.conf   # edited live, NOT in the nix store
+  hyprland.conf, binds.conf                  # edited live, NOT in the nix store
 ```
 
 **Machines:** `cpubox` (Intel laptop, integrated graphics) · `gpubox` (RTX 4060 laptop, PRIME sync, Steam).
@@ -59,7 +59,9 @@ Full design rationale (ownership rules, ordering, gotchas) is in `README.md` —
 
 **Noctalia cannot match Hyprland's window shadows.** `bar.default.shadow = true` grows the layer surface but draws *nothing* under the islands — it only hazes the top 6px of the windows beneath, since the bar is `layer = "top"`. `contact_shadow` is a no-op. Both stay off. Note the window shadow ramps ~5px, so a bar-to-window gap below ~8 gets visually swallowed (measured 75% of wallpaper brightness at 4px, 97% at 8); if `gaps_out` ever drops, `margin_opposite_edge` adds to the exclusive zone without moving the bar surface and is the lever to compensate.
 
-**`lock_cmd` in `hypr/hypridle.conf` must never be `loginctl lock-session`.** hypridle subscribes to logind's `Lock` signal and `loginctl` emits it — that is a self-triggering loop, measured at 3110 forks/sec. Use `noctalia msg session lock`, which only calls `SetLockedHint`. The *listeners* correctly keep `loginctl lock-session`.
+**Idle is Noctalia's, not hypridle's.** `[idle.behavior.*]` in `home/noctalia.nix` (actions `lock` / `screen_off` / `suspend` / `lock_and_suspend` / a custom `command`, each with `timeout` and an optional shorter `locked_timeout` that applies only once locked). hypridle was dropped because every action it invoked was already a Noctalia one, so it was only a timer around this — and one that could deadlock: hypridle subscribes to logind's `Lock` signal and `loginctl lock-session` emits it, so a `lock_cmd = loginctl lock-session` self-triggered at a measured 3110 forks/sec. In-process there is no round trip to re-enter. `pre_action_fade_seconds` is global, not per-behavior, so a custom brightness-dim behavior would draw the fullscreen fade over itself — that is why the old 150s `brightnessctl` dim listener became the fade rather than being ported. Lock-before-suspend needs no config: Noctalia takes a logind sleep-delay inhibit on `PrepareForSleep` and locks first, covering lid close and `systemctl suspend`.
+
+**No idle suspend, on purpose.** The `suspend` behavior is declared with `enabled = false` so the choice stays visible: the machine is left running unattended so a phone can reach sessions on it, and suspending kills that where locking does not. logind's `HandleLidSwitch = "suspend"` (`modules/laptop.nix`) is the battery backstop — off AC only, since `HandleLidSwitchExternalPower = "ignore"`.
 
 **Bar lane anchoring decides which islands jitter.** `start` is left-anchored and grows rightward, so anything placed after `group:left` gets shoved every time the active-window title changes length; `end` is right-anchored, so an island at its head keeps a fixed right edge. That is why `media` lives at the head of `end` (right of the centre clock) rather than second-from-left.
 
@@ -72,12 +74,14 @@ LazyVim follows Noctalia at *plugin* granularity, not pixel granularity. The `co
 
 ### Shell: bash (login) + fish (interactive)
 
-`users.users.${username}.shell = pkgs.bash` in `modules/core.nix` — bash stays the process/login shell so scripts, `sudo -s`, systemd, etc. all keep POSIX semantics. `home/shell.nix` has bash `exec` into fish on every *interactive* start, guarded by a self-set `$BASH_EXECS_FISH` marker (not something fish exports itself) so that deliberately running `bash` from inside a fish session doesn't bounce you straight back. Non-interactive bash (`bash -c ...`) never hits that line.
+`users.users.${username}.shell = pkgs.bash` in `modules/core.nix` — bash stays the process/login shell so scripts, `sudo -s`, systemd, etc. all keep POSIX semantics. `home/shell.nix` has bash `exec` into fish on every *interactive* start, guarded on the **parent process** (`ps -o comm= -p $PPID` != fish), not on an exported marker. The marker this used to use was inherited by every descendant of the fish session, so anything spawning `$SHELL` from inside it — nvim's `:terminal`, a tmux pane — found it set and stayed in bare bash with no starship. Parent-is-fish is the only case that must not bounce back (you typed `bash` at a fish prompt and meant it). Non-interactive bash (`bash -c ...`) is excluded by the `$-` test as well as by never sourcing `.bashrc`.
 starship/zoxide/atuin/fzf all have first-class fish support in home-manager (`enableFishIntegration`) — no hand-rolled init file needed, unlike the xonsh setup this replaced.
 
 ### Editors: Zed (GUI) + LazyVim (terminal)
 
 `home/zed.nix` restores the pre-rehaul Zed settings verbatim (VSCode keymap, basedpyright/ruff/nixd, format-on-save). `home/lazyvim.nix` uses the `pfassina/lazyvim-nix` flake (`programs.lazyvim`) instead of hand-rolled nixvim — it tracks upstream LazyVim releases and gives the full default plugin set (telescope, blink-cmp, gitsigns, which-key, session restore, conform.nvim autoformat — all LazyVim defaults, not configured here) for free. Keep `home/lazyvim.nix` itself minimal: extras + `extraPackages` + the Noctalia-driven colorscheme picker + autosave, nothing else — don't fight the "zero-config" model by re-adding keymaps/plugins LazyVim already ships. Pinned to a release tag in `flake.nix`, same pattern as Noctalia; bump with `nix flake lock --update-input lazyvim`.
+
+**Overriding a plugin an extra already declares** (`plugins.markdown` does both of these): name it *without* the owner prefix — `"render-markdown.nvim"`, not `"MeanderingProgrammer/render-markdown.nvim"`. lazyvim-nix scans user plugin files for quoted `"owner/repo"` tokens and resolves each against `pkgs.vimPlugins`, so the qualified form declares a *second* copy; lazy.nvim merges a bare name into the existing spec. A plugin whose upstream `build` step writes into its own directory (markdown-preview.nvim downloads/builds a node server) can't work from the read-only store: point `dir` at the nixpkgs build, which ships it prebuilt, and set `build = false`.
 
 ### Adding packages
 
