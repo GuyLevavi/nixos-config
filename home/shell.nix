@@ -31,7 +31,20 @@
 
     fish = {
       enable = true;
-      interactiveShellInit = "set -g fish_greeting"; # no welcome banner
+      interactiveShellInit = ''
+        set -g fish_greeting # no welcome banner
+        # nix-shell's interactive bash runs with --rcfile (stdenv setup) instead
+        # of sourcing ~/.bashrc, so the exec-to-fish guard never fires inside
+        # it. Wrap the command instead: --run fish starts fish (still interactive
+        # on a tty, so config.fish/starship load) with the nix env on PATH.
+        function nix-shell --wraps=nix-shell
+          if string match -q -- '--run*' $argv
+            command nix-shell $argv
+          else
+            command nix-shell $argv --run fish
+          end
+        end
+      '';
       shellAliases = {
         ls = "eza --icons --group-directories-first";
         ll = "eza -l --icons --git";

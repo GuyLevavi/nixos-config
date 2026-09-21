@@ -65,6 +65,7 @@
     lazydocker
 
     # dev
+    gcc
     python3
     uv
     nodejs

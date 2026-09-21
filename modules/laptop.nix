@@ -28,6 +28,11 @@
     };
   };
 
+  # thermald first tries adaptive mode; on some DPTC tables (this Swift) it
+  # can't build zones and asks systemd to restart it non-adaptively. Upstream
+  # has no restart policy, so without this it stays dead all session.
+  systemd.services.thermald.unitConfig.Restart = "on-failure";
+
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = false; # the shell's toggle owns this
@@ -38,5 +43,6 @@
   environment.systemPackages = with pkgs; [
     powertop
     acpi
+    lm_sensors # temps only — this Acer's EC fans have no hwmon interface
   ];
 }
