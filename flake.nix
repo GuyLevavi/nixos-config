@@ -17,10 +17,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # opencode downgrade channel: 1.18.26–1.18.30 crash whenever the
+    # opencode-go gateway auth exists ("failed to send prompt (server error)"
+    # — TypeError in SystemPrompt.environment, verified 1.18.25 is clean).
+    # This is the last nixpkgs rev shipping 1.18.25; the overlay below swaps
+    # it in. Drop input + overlay together once a fixed opencode (> 1.18.30)
+    # is verified.
+    nixpkgs-opencode = {
+      url = "github:NixOS/nixpkgs/d2f67949798825fe853f7c5d0492b8bf016d3f88";
+    };
+
   };
 
   outputs =
-    { nixpkgs, home-manager, ... }@inputs:
+    { nixpkgs, home-manager, nixpkgs-opencode, ... }@inputs:
     let
       system = "x86_64-linux";
       username = "gl";
@@ -35,6 +45,12 @@
             ./hosts/${hostName}
             home-manager.nixosModules.home-manager
             {
+              # temporary opencode pin — see inputs.nixpkgs-opencode
+              nixpkgs.overlays = [
+                (_final: _prev: {
+                  opencode = nixpkgs-opencode.legacyPackages.${system}.opencode;
+                })
+              ];
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
