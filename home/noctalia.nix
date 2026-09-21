@@ -429,7 +429,7 @@ in
         };
         media = {
           hide_when_no_media = true;
-          max_length = 180;
+          max_length = 260;
         };
         cpu = {
           type = "sysmon";
