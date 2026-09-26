@@ -1,4 +1,21 @@
 { pkgs, ... }:
+let
+  # One declaration for every editor — see home/lsp.nix.
+  lspPackages = import ./lsp.nix { inherit pkgs; };
+  # opencode ships only ripgrep on its PATH (nixpkgs opencode/package.nix).
+  # Add the shared language servers so its `lsp` config can spawn the nix-built
+  # binaries by name. symlinkJoin re-wraps the existing binary instead of
+  # triggering an overrideAttrs source rebuild.
+  opencodeWithLsp = pkgs.symlinkJoin {
+    name = "opencode-${pkgs.opencode.version}";
+    paths = [ pkgs.opencode ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/opencode \
+        --prefix PATH : ${pkgs.lib.makeBinPath lspPackages}
+    '';
+  };
+in
 {
   programs = {
     # Colours come from Noctalia's ghostty template at runtime; only non-colour
@@ -82,6 +99,6 @@
     uv
     nodejs
     claude-code
-    opencode
+    opencodeWithLsp # opencode + the shared language-server PATH
   ];
 }

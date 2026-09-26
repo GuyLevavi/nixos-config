@@ -1,30 +1,15 @@
 { pkgs, ... }:
+let
+  # One declaration for every editor — see home/lsp.nix.
+  lspPackages = import ./lsp.nix { inherit pkgs; };
+in
 {
   programs.zed-editor = {
     enable = true;
     mutableUserSettings = true;
     # EDITOR/VISUAL = `zeditor -w`; zed is the default editor now
     defaultEditor = true;
-    extraPackages = with pkgs; [
-      basedpyright
-      ruff
-      nixd
-      nixpkgs-fmt
-      bash-language-server
-      yaml-language-server
-      taplo
-      # C/C++ grammars are built into zed; clang-tools supplies clangd
-      # (LSP + formatting) so zed doesn't download its own binary.
-      clang-tools
-      # Package-version server for TOML (Cargo.toml hover info). Zed's extension
-      # downloads a prebuilt binary that can't run on NixOS, so we supply the
-      # nix-built one on PATH instead.
-      package-version-server
-      # Obsidian-style markdown LSP (wikilinks, backlinks, daily notes) for the
-      # vault at ~/GoogleDrive/Obsidian. The extension resolves the binary from
-      # PATH first, so this nix build is what actually runs.
-      markdown-oxide
-    ];
+    extraPackages = lspPackages;
     extensions = [
       "nix"
       "toml"
