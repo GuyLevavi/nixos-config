@@ -397,14 +397,16 @@ let
     radius = 8; # matches hypr/hyprland.conf decoration.rounding
   };
 
-  # GPU gauges only where they are meaningful. gpubox is PRIME sync, so the
-  # dGPU is always awake and Noctalia reports the RTX 4060 through NVML (usage
-  # + temp + real VRAM). cpubox's Intel iGPU would report usage/temp but no
-  # VRAM, so its stats island stays CPU/RAM/temp. GPU probes only run while a
-  # GPU stat is displayed, so this is also what gates the 5s wakeups.
-  statsMembers =
-    [ "cpu" "ram" "cputemp" ]
-    ++ lib.optionals (hostName == "gpubox") [ "gpu" "gputemp" "gpuvram" ];
+  # CPU and GPU each get their own island, on separate capsule groups. GPU
+  # gauges only where they are meaningful: gpubox is PRIME sync, so the dGPU is
+  # always awake and Noctalia reports the RTX 4060 through NVML (usage + real
+  # VRAM + temp). cpubox's Intel iGPU has no VRAM to report, so cpubox shows no
+  # GPU island at all. GPU probes only run while a GPU stat is displayed, so the
+  # gpubox-only island is also what gates the 5s wakeups.
+  statsMembers = [ "cpu" "ram" "cputemp" ];
+  # Mirrors the CPU island's order -- usage, memory, temperature -- so VRAM
+  # comes before temp, matching cpu/ram/cputemp.
+  gpuMembers = [ "gpu" "gpuvram" "gputemp" ];
 in
 {
   imports = [ inputs.noctalia.homeModules.default ];
@@ -454,28 +456,34 @@ in
         # right of the centre clock -- and not second-from-left.
         start = [ "group:left" ];
         center = [ "group:mid" ];
-        end = [
-          "group:media"
-          "group:stats"
-          "group:sys"
-        ];
-        capsule_group = [
-          (mkGroup "left" [
-            "workspaces"
-            "active_window"
-          ])
-          (mkGroup "media" [ "media" ])
-          (mkGroup "mid" [ "clock" ])
-          (mkGroup "stats" statsMembers)
-          (mkGroup "sys" [
-            "volume"
-            "battery"
-            "tray"
-            "network"
-            "bluetooth"
-            "control-center"
-          ])
-        ];
+        end =
+          [
+            "group:media"
+            "group:stats"
+          ]
+          ++ lib.optionals (hostName == "gpubox") [ "group:gpu" ]
+          ++ [ "group:sys" ];
+        capsule_group =
+          [
+            (mkGroup "left" [
+              "workspaces"
+              "active_window"
+            ])
+            (mkGroup "media" [ "media" ])
+            (mkGroup "mid" [ "clock" ])
+            (mkGroup "stats" statsMembers)
+          ]
+          ++ lib.optionals (hostName == "gpubox") [ (mkGroup "gpu" gpuMembers) ]
+          ++ [
+            (mkGroup "sys" [
+              "volume"
+              "battery"
+              "tray"
+              "network"
+              "bluetooth"
+              "control-center"
+            ])
+          ];
       };
 
       # DMS-style resource indicators (sysmon gauges) + media player display,
@@ -512,13 +520,13 @@ in
           type = "sysmon";
           stat = "gpu_usage";
         };
-        gputemp = {
-          type = "sysmon";
-          stat = "gpu_temp";
-        };
         gpuvram = {
           type = "sysmon";
           stat = "gpu_vram";
+        };
+        gputemp = {
+          type = "sysmon";
+          stat = "gpu_temp";
         };
       };
 
