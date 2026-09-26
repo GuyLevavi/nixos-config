@@ -516,9 +516,14 @@ in
         network.show_label = false;
       }
       // lib.optionalAttrs (hostName == "gpubox") {
+        # Glyphs mirror the CPU island row-for-row: usage -> speedometer,
+        # memory -> chip, temperature -> flame. Without the override the GPU
+        # island defaults to monitor (gpu-usage), thermometer (temperature) and
+        # chip, so only the memory row lined up with the CPU island.
         gpu = {
           type = "sysmon";
           stat = "gpu_usage";
+          glyph = "cpu-usage";
         };
         gpuvram = {
           type = "sysmon";
@@ -527,6 +532,7 @@ in
         gputemp = {
           type = "sysmon";
           stat = "gpu_temp";
+          glyph = "cpu-temperature";
         };
       };
 
