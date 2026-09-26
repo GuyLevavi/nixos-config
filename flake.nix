@@ -27,6 +27,21 @@
       url = "github:NixOS/nixpkgs/d2f67949798825fe853f7c5d0492b8bf016d3f88";
     };
 
+    # Matt Pocock's engineering/productivity skills, vendored into the store by
+    # home/skills.nix. flake = false — the repo ships no flake.nix. Bumped by
+    # `update`; flake.lock is the rollback point.
+    matt-skills = {
+      url = "github:mattpocock/skills";
+      flake = false;
+    };
+
+    # workmux: git worktrees paired with tmux windows. home/tmux.nix takes the
+    # package, its global config, and the OpenCode status plugin from here.
+    workmux = {
+      url = "github:raine/workmux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =

@@ -24,7 +24,9 @@ modules/
 home/
   default.nix          the ownership rule, out-of-store symlinks
   noctalia.nix         the shell
-  shell.nix            bash->fish, starship/zoxide/atuin/fzf, tmux, delta/lazygit/gh
+  shell.nix            bash->fish, starship/zoxide/atuin/fzf, delta/lazygit/gh
+  tmux.nix             tmux (plugin-less), workmux
+  skills.nix           mattpocock/skills
   programs.nix         terminal, core CLI, media tools
   zed.nix              Zed editor
   apps.nix             obsidian + gdrive sync, spotify

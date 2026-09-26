@@ -116,6 +116,60 @@ let
   };
   syncOpencodeTheme = lib.getExe opencodeThemeSync;
 
+  # tmux has no Noctalia template, so the palette reaches it by hook like Zed
+  # and OpenCode. Colours are read from the ghostty theme Noctalia already
+  # writes (the same palette the terminal uses), so community/custom palettes
+  # work too — not just the builtin names. Writes ~/.config/tmux/palette.conf,
+  # which home/tmux.nix sources; the ANSI block there is the fallback until
+  # this first runs.
+  tmuxThemeSync = pkgs.writeShellApplication {
+    name = "noctalia-tmux-theme";
+    runtimeInputs = [
+      pkgs.gawk
+      pkgs.tmux
+      config.programs.noctalia.package
+    ];
+    text = ''
+      theme="''${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/noctalia"
+      [ -f "$theme" ] || exit 0
+
+      # Declared so shellcheck sees them; the eval below is what sets them.
+      p0="" p4="" p5="" p7="" p8=""
+      eval "$(awk -F= '
+        /^palette = / { gsub(/[[:space:]]/, "", $2); gsub(/[[:space:]]/, "", $3); print "p" $2 "=" $3 }
+      ' "$theme")"
+      [ -n "$p4" ] || exit 0
+
+      out="''${XDG_CONFIG_HOME:-$HOME/.config}/tmux/palette.conf"
+      mkdir -p "$(dirname "$out")"
+      {
+        printf 'set -g status-style "bg=%s,fg=%s"\n' "$p0" "$p7"
+        printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$p4" "$p0" "$p0" "$p4"
+        printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$p4"
+        printf 'setw -g window-status-style "fg=%s,bg=%s"\n' "$p8" "$p0"
+        printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$p4"
+        printf 'set -g message-style "bg=%s,fg=%s"\n' "$p8" "$p7"
+        printf 'set -g mode-style "bg=%s,fg=%s"\n' "$p4" "$p0"
+        printf 'setw -g clock-mode-colour "%s"\n' "$p5"
+        printf 'set -g pane-border-style "fg=%s"\n' "$p8"
+        printf 'set -g pane-active-border-style "fg=%s"\n' "$p4"
+        printf 'set -g popup-style "bg=%s,fg=%s"\n' "$p0" "$p7"
+        printf 'set -g popup-border-style "fg=%s"\n' "$p8"
+      } >"$out.tmp"
+
+      # No-op when already in sync — avoids a needless live reload.
+      if cmp -s "$out.tmp" "$out" 2>/dev/null; then
+        rm -f "$out.tmp"
+        exit 0
+      fi
+      mv -f "$out.tmp" "$out"
+
+      # Apply in place if a server is running; a no-op at login.
+      tmux source-file "$out" >/dev/null 2>&1 || true
+    '';
+  };
+  syncTmuxTheme = lib.getExe tmuxThemeSync;
+
   # Custom OpenCode theme files for palettes without built-in support.
   # These live in ~/.config/opencode/themes/ and override by name.
   opencodeThemes = {
@@ -512,12 +566,12 @@ in
       };
 
 
-      # Zed and OpenCode follow the palette through their sync hooks (above);
-      # `started` covers a fresh login where the palette never changes.
+      # Zed, OpenCode and tmux follow the palette through their sync hooks
+      # (above); `started` covers a fresh login where the palette never changes.
       hooks = {
-        started = [ syncZedTheme syncOpencodeTheme ];
-        colors_changed = [ syncZedTheme syncOpencodeTheme ];
-        theme_mode_changed = [ syncZedTheme syncOpencodeTheme ];
+        started = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
+        colors_changed = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
+        theme_mode_changed = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
       };
 
       theme = {
@@ -549,6 +603,10 @@ in
 
   home.activation.opencodeThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
     run ${syncOpencodeTheme} || true
+  '';
+
+  home.activation.tmuxThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
+    run ${syncTmuxTheme} || true
   '';
 
   # Custom OpenCode themes for palettes without built-in support.

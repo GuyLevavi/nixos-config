@@ -79,23 +79,6 @@
       historyWidget.command = ""; # atuin owns Ctrl-R; fzf keeps Ctrl-T/Alt-C
     };
 
-    tmux = {
-      enable = true;
-      prefix = "C-a";
-      baseIndex = 1;
-      escapeTime = 0;
-      terminal = "tmux-256color";
-      mouse = true;
-      keyMode = "vi";
-      extraConfig = ''
-        set -as terminal-features ",*:RGB"
-        bind | split-window -h -c "#{pane_current_path}"
-        bind - split-window -v -c "#{pane_current_path}"
-        unbind '"'
-        unbind %
-      '';
-    };
-
     git = {
       enable = true;
       settings = {

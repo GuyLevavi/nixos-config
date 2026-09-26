@@ -8,6 +8,8 @@
     ./noctalia.nix
     ./programs.nix
     ./shell.nix
+    ./tmux.nix
+    ./skills.nix
     ./zed.nix
     ./apps.nix
     ./scripts.nix
