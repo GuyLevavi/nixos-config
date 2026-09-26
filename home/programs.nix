@@ -29,6 +29,19 @@
     bat.enable = true;
     eza.enable = true;
     ripgrep.enable = true;
+
+    # GPU support is compiled in (BTOP_GPU=ON). gpu0 resolves to whatever the
+    # box has: the RTX 4060 via NVML on gpubox, the Iris Xe via i915 on cpubox.
+    # `color_theme = "noctalia"` is load-bearing beyond looks: Noctalia's btop
+    # template only rewrites btop.conf when color_theme isn't already this, so
+    # presetting it keeps that runtime hook a no-op against this read-only file.
+    btop = {
+      enable = true;
+      settings = {
+        color_theme = "noctalia";
+        shown_boxes = "cpu mem gpu0";
+      };
+    };
   };
 
   # Minimal monochrome cursor: Noctalia can't theme it, so pick one that stays
@@ -53,7 +66,6 @@
     mpv
     unzip
     jq
-    btop
     helix # zero-config terminal editor fallback
 
     # CLI (no home-manager module)

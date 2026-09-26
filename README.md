@@ -66,9 +66,12 @@ machinery because there is no accumulated state to repair.
 
 **Noctalia owns** the theme. When you switch palette in its bar/settings
 (`SUPER+T` opens that window) it writes `~/.config/gtk-3.0/`, `gtk-4.0/`,
-`qt6ct/`, the ghostty colours, btop, starship, and the Firefox chrome. Those
-files are mutable state outside Nix, on purpose, because a build-time theming
-system cannot switch at runtime. Zed sits outside the template system (there
+`qt6ct/`, the ghostty colours, the btop theme file, starship, and the Firefox
+chrome. Those files are mutable state outside Nix, on purpose, because a
+build-time theming system cannot switch at runtime. btop is the one place the
+split cuts through a program: Noctalia owns `btop/themes/noctalia.theme`, while
+`btop.conf` is Nix-owned (`programs.btop` in `home/programs.nix`) and pins
+`color_theme = "noctalia"` so the theme hook stays a no-op against it. Zed sits outside the template system (there
 is no Noctalia template for it) but follows anyway: a Noctalia hook
 (`home/noctalia.nix`) rewrites the `theme` block of `~/.config/zed/settings.json`
 on every palette or light/dark switch and Zed live-reloads the file. The

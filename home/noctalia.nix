@@ -3,6 +3,7 @@
   pkgs,
   lib,
   config,
+  hostName,
   ...
 }:
 let
@@ -395,6 +396,15 @@ let
     padding = 6;
     radius = 8; # matches hypr/hyprland.conf decoration.rounding
   };
+
+  # GPU gauges only where they are meaningful. gpubox is PRIME sync, so the
+  # dGPU is always awake and Noctalia reports the RTX 4060 through NVML (usage
+  # + temp + real VRAM). cpubox's Intel iGPU would report usage/temp but no
+  # VRAM, so its stats island stays CPU/RAM/temp. GPU probes only run while a
+  # GPU stat is displayed, so this is also what gates the 5s wakeups.
+  statsMembers =
+    [ "cpu" "ram" "cputemp" ]
+    ++ lib.optionals (hostName == "gpubox") [ "gpu" "gputemp" "gpuvram" ];
 in
 {
   imports = [ inputs.noctalia.homeModules.default ];
@@ -456,11 +466,7 @@ in
           ])
           (mkGroup "media" [ "media" ])
           (mkGroup "mid" [ "clock" ])
-          (mkGroup "stats" [
-            "cpu"
-            "ram"
-            "cputemp"
-          ])
+          (mkGroup "stats" statsMembers)
           (mkGroup "sys" [
             "volume"
             "battery"
@@ -500,6 +506,20 @@ in
         # Icon only — the SSID/interface name is redundant with the network
         # widget's own hover/expanded view.
         network.show_label = false;
+      }
+      // lib.optionalAttrs (hostName == "gpubox") {
+        gpu = {
+          type = "sysmon";
+          stat = "gpu_usage";
+        };
+        gputemp = {
+          type = "sysmon";
+          stat = "gpu_temp";
+        };
+        gpuvram = {
+          type = "sysmon";
+          stat = "gpu_vram";
+        };
       };
 
       # Concentric radius: windows are rounding = 8 sitting 8 inside the
