@@ -1,6 +1,6 @@
 # nixos
 
-Two laptops, one repo. Hyprland + Noctalia, no dotfile framework. Lives at
+Two laptops, one repo. Hyprland + Noctalia on NixOS unstable, lives at
 `/etc/nixos`.
 
 | host     | graphics                                            |
@@ -14,115 +14,76 @@ The only difference between them is one extra import.
 
 ```
 flake.nix              inputs, mkHost helper, both hosts
-hosts/
-  cpubox/              host id, integrated video accel, stateVersion
-  gpubox/              same + nvidia.nix
-modules/
-  core.nix             boot, nix settings, locale, user
-  desktop.nix          hyprland+uwsm, greetd, pipewire, fonts, podman, noctalia (system)
-  laptop.nix           power, lid, bluetooth, touchpad, firmware
-home/
-  default.nix          the ownership rule, out-of-store symlinks
-  noctalia.nix         the shell
-  shell.nix            bash->fish, starship/zoxide/atuin/fzf, delta/lazygit/gh
-  tmux.nix             tmux (plugin-less), workmux
-  skills.nix           mattpocock/skills
-  programs.nix         terminal, core CLI, media tools
-  zed.nix              Zed editor
-  apps.nix             obsidian + gdrive sync, spotify
-  scripts.nix          rb / update / screen-record / monitor-watch
-hypr/
-  hyprland.conf        edited live, NOT in the nix store
-  binds.conf
+hosts/<machine>/       host settings + generated hardware-configuration.nix
+modules/               core (boot/user), desktop (hyprland/greetd/pipewire),
+                       laptop (power/lid/bluetooth/touchpad)
+home/                  home-manager modules: noctalia, shell, tmux, zed, lsp,
+                       programs, apps, scripts, skills
+hypr/                  hyprland.conf + binds.conf, edited live, NOT in the store
 ```
-
-Roughly 1000 lines including hardware configs, a third of it hyprland config
-and comments.
 
 ## Bootstrap
 
 ```sh
 cd /etc/nixos
-
-# 1. hardware-configuration.nix already matches each real machine.
-#    Only regenerate if hardware changes:
-#    sudo nixos-generate-config --show-hardware-config > hosts/$(hostname)/hardware-configuration.nix
-
-# 2. Build.
-git add -A          # untracked files are invisible to a flake build
-sudo nixos-rebuild switch --flake .#cpubox    # or .#gpubox
+git add -A                                      # untracked files are invisible to a flake build
+sudo nixos-rebuild switch --flake .#cpubox      # or .#gpubox
 ```
 
-After the first build, `rb` does that for you on either machine; `update`
-bumps flake inputs first.
+After the first build, `rb` does that on either machine; `update` bumps flake
+inputs first.
 
 ## Who owns what
 
-Three categories, and the whole design follows from keeping them apart.
-
 **Nix owns** packages, services, kernel, drivers, users, and every config file
-that you do not edit at runtime. Rebuilds are idempotent; there is no migration
-machinery because there is no accumulated state to repair.
+you do not edit at runtime. Rebuilds are idempotent.
 
-**Noctalia owns** the theme. When you switch palette in its bar/settings
-(`SUPER+T` opens that window) it writes `~/.config/gtk-3.0/`, `gtk-4.0/`,
-`qt6ct/`, the ghostty colours, the btop theme file, starship, and the Firefox
-chrome. Those files are mutable state outside Nix, on purpose, because a
-build-time theming system cannot switch at runtime. btop is the one place the
-split cuts through a program: Noctalia owns `btop/themes/noctalia.theme`, while
-`btop.conf` is Nix-owned (`programs.btop` in `home/programs.nix`) and pins
-`color_theme = "noctalia"` so the theme hook stays a no-op against it. Zed sits outside the template system (there
-is no Noctalia template for it) but follows anyway: a Noctalia hook
-(`home/noctalia.nix`) rewrites the `theme` block of `~/.config/zed/settings.json`
-on every palette or light/dark switch and Zed live-reloads the file. The
-palette-to-theme map and the theme extensions it needs are in `home/zed.nix`;
-non-builtin palettes fall back to Catppuccin Mocha/Latte.
+**Noctalia owns** the theme. Switching the palette in its bar/settings
+(`SUPER+T` opens that window) writes the GTK/Qt colours, the ghostty theme, the
+btop theme file, starship and the Firefox chrome at runtime. btop is split:
+Noctalia owns `~/.config/btop/themes/noctalia.theme`, while `btop.conf` is
+Nix-owned with `color_theme = "noctalia"` preset so that hook stays a no-op.
+Zed, tmux and OpenCode have no Noctalia template; hooks in `home/noctalia.nix`
+sync their theme files from the palette.
 
-Consequences, enforced in `home/default.nix`:
+Consequences:
 
-- **Do not add Stylix.** It generates the same files as read-only store
-  symlinks. One of them will lose and the failure is confusing.
-- `gtk.enable` and `qt.enable` stay `false` for the same reason.
-- `programs.noctalia.settings` (in `home/noctalia.nix`) seeds `config.toml`
-  with the theme + template ids only. The GUI writes its own
-  `~/.local/state/noctalia/settings.toml`, which overrides per-key — both
-  layers coexist, so the settings GUI keeps working.
-- Zed's `settings.json` is co-owned: home-manager deep-merges `home/zed.nix`
-  over the live file on every `rb` (Nix wins per key, so GUI edits to Nix
-  keys revert; other keys persist). Sign-in is unaffected — credentials live
-  in gnome-keyring, not in that file.
+- **Do not add Stylix.** `gtk.enable` and `qt.enable` stay `false` for the same
+  reason: home-manager must never write those files as read-only store symlinks.
+- `programs.noctalia.settings` seeds `config.toml`; the GUI's
+  `~/.local/state/noctalia/settings.toml` overrides per-key at runtime.
+- Zed's `settings.json` is co-owned: Nix deep-merges over the live file on every
+  `rb` (Nix wins per key, GUI edits to those keys revert). Sign-in lives in
+  gnome-keyring, not that file, so Nix ownership never signs you out.
 
-**You own** `hypr/`. Those three files are symlinked out of the store into
-`/etc/nixos/hypr/`, so editing a keybind and running `hyprctl reload` is
-instant. No rebuild in the loop for the thing you change most often.
-(`~/.config/hypr/noctalia.conf` and `monitor-state.conf` are runtime-written —
-by Noctalia and monitor-watch respectively — and deliberately not in the repo.)
+**You own** `hypr/`. It is symlinked out of the store from `/etc/nixos/hypr/`,
+so editing a keybind and running `hyprctl reload` is instant — no rebuild in the
+loop for the thing you change most often. (`~/.config/hypr/noctalia.conf` and
+`monitor-state.conf` are runtime-written by Noctalia and monitor-watch, and
+deliberately not in the repo.)
 
 ## Things that will bite you
 
 - **Untracked files are invisible.** Add a new `.nix` file, forget `git add`,
   and the flake reports it does not exist. `rb` runs `git add -A` first.
+- **Never `git checkout`/`reset`/`clean` over `hypr/hyprland.conf` while
+  Hyprland is running.** Its config watcher sees the file vanish and regenerates
+  a stub over the top of it; the session then reloads with wrong binds. Restore
+  the file, then `hyprctl reload`. Disowning the file from git would also fix
+  this, but it is tracked on purpose.
 - **`open = true`** in `hosts/gpubox/nvidia.nix` is correct for Turing (RTX 20xx
-  / GTX 16xx) and newer only — this machine is Ada Lovelace (RTX 4060), well
-  within range.
-- **Do not enable TLP.** power-profiles-daemon is already on via Noctalia's
+  / GTX 16xx) and newer only — this machine is Ada (RTX 4060), well within range.
+- **Do not enable TLP.** power-profiles-daemon comes from Noctalia's
   `recommendedServices`, the two conflict, and only ppd exposes the D-Bus
   interface the shell's power widget drives.
 - **Firefox theming** needs
   `toolkit.legacyUserProfileCustomizations.stylesheets = true` in `about:config`
   before the userChrome colours apply. It fails silently otherwise.
-- **Noctalia is pinned to a tag** in `flake.nix` (not the default branch), on
-  purpose — an update can rename an IPC verb and break a `hypr/binds.conf`
-  line. Bump the input deliberately (`nix flake lock --update-input noctalia`)
-  so breakage arrives only when you ask for it. Fixing a broken bind is
-  editing `hypr/binds.conf`, not rebuilding your setup — which is the entire
-  point of keeping the shell rented and the owned surface thin.
-- **gpubox uses PRIME sync, not offload.** The dGPU is always rendering (no
-  `nvidia-offload` wrapper needed, better sustained gaming perf) instead of
-  sleeping when idle — you trade battery for that. CUDA and the airgap/work
-  tooling from the pre-rehaul config are still not carried over.
-
-## Swapping the shell out
+- **Noctalia is pinned to a tag** in `flake.nix` on purpose — an update can
+  rename an IPC verb and break a `hypr/binds.conf` line. Bump it deliberately
+  (`nix flake lock --update-input noctalia`).
+- **gpubox uses PRIME sync, not offload.** The dGPU is always rendering — you
+  trade battery for sustained gaming performance.
 
 If Noctalia does not work out, the blast radius is `home/noctalia.nix`, the
 `programs.noctalia` block in `modules/desktop.nix`, and the `noctalia msg` lines
