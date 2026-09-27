@@ -2,10 +2,8 @@
 let
   root = "${inputs.matt-skills}/skills";
 
-  # Upstream declares its shipped set only in .claude-plugin/marketplace.json;
-  # these siblings are outside it (Claude/git-hook machinery opencode can't run,
-  # plus WIP). Everything else is discovered — a new skill or category lands on
-  # the next `update` with no edit here.
+  # Upstream's marketplace.json only lists its shipped set; these siblings are
+  # Claude/git-hook machinery opencode can't run. Everything else is discovered.
   reject = [
     "deprecated"
     "in-progress"
@@ -19,9 +17,8 @@ let
   categories = builtins.filter (category: !(builtins.elem category reject)) (dirsIn root);
 in
 {
-  # Whole skill dirs (SKILL.md + supporting files) as read-only store symlinks.
-  # The six hand-rolled skills in this directory are not managed here; a name
-  # collision would show up as a home-manager .hm-bak backup at activation.
+  # Whole skill dirs as read-only store symlinks. Hand-rolled skills here are
+  # untouched; a name collision would show up as a .hm-bak at activation.
   xdg.configFile = builtins.listToAttrs (
     lib.concatMap (
       category:

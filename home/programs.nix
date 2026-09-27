@@ -2,11 +2,9 @@
 let
   # One declaration for every editor — see home/lsp.nix.
   lspPackages = import ./lsp.nix { inherit pkgs; };
-  # opencode ships only ripgrep on its PATH (nixpkgs opencode/package.nix).
-  # Add the shared language servers so its `lsp` config can spawn the nix-built
-  # binaries by name. symlinkJoin re-wraps the existing binary instead of
-  # triggering an overrideAttrs source rebuild.
-  opencodeWithLsp = pkgs.symlinkJoin {
+  # opencode ships only ripgrep on PATH; add the shared language servers so
+  # its `lsp` config can spawn nix-built binaries by name.
+  opencodeWithLsp = pkgs.symlinkJoin { # re-wrap the binary, don't rebuild it
     name = "opencode-${pkgs.opencode.version}";
     paths = [ pkgs.opencode ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -18,9 +16,8 @@ let
 in
 {
   programs = {
-    # Colours come from Noctalia's ghostty template at runtime; only non-colour
-    # settings belong here. `theme = noctalia` points at the file it writes.
-    # Ghostty doesn't hot-reload — ctrl+shift+, or a new window after a switch.
+    # Colours come from Noctalia's template at runtime; only non-colour settings
+    # belong here. Ghostty doesn't hot-reload — new window after a palette switch.
     ghostty = {
       enable = true;
       settings = {
@@ -28,16 +25,13 @@ in
         font-family = "JetBrainsMono Nerd Font";
         font-size = 14;
         window-decoration = false;
-        # Padding is charged in whole cells (11.04 x 24.5 logical px here), so
-        # x-padding costs a column whenever a cell boundary lands inside it:
-        # never at 2, at ~a third of window widths at 4, always at 8.
+        # Padding is charged in whole cells here: 2 never costs a column, 4
+        # sometimes does, 8 always.
         window-padding-x = 4;
         window-padding-y = 0;
-        # Not "extend": that duplicates the nearest grid row, which smears a
-        # second copy of lualine's colours into the padding.
+        # Not "extend": that duplicates the nearest grid row into the padding.
         window-padding-color = "background";
-        # Spreads the undrawable (size mod cell) remainder across both edges
-        # instead of dumping it at the bottom.
+        # Spreads the undrawable remainder across both edges.
         window-padding-balance = true;
         confirm-close-surface = false;
       };
@@ -47,11 +41,9 @@ in
     eza.enable = true;
     ripgrep.enable = true;
 
-    # GPU support is compiled in (BTOP_GPU=ON). gpu0 resolves to whatever the
-    # box has: the RTX 4060 via NVML on gpubox, the Iris Xe via i915 on cpubox.
-    # `color_theme = "noctalia"` is load-bearing beyond looks: Noctalia's btop
-    # template only rewrites btop.conf when color_theme isn't already this, so
-    # presetting it keeps that runtime hook a no-op against this read-only file.
+    # GPU support is compiled in; gpu0 = dGPU via NVML on gpubox, iGPU via
+    # i915 on cpubox. color_theme=noctalia keeps Noctalia's template hook a
+    # no-op against this read-only file.
     btop = {
       enable = true;
       settings = {
@@ -61,9 +53,8 @@ in
     };
   };
 
-  # Minimal monochrome cursor: Noctalia can't theme it, so pick one that stays
-  # legible on any palette. No gtk.enable here (it needs the gtk module, which
-  # the ownership rule keeps off); Wayland apps read XCURSOR_THEME from the env.
+  # Noctalia can't theme the cursor; pick one legible on any palette. No
+  # gtk.enable (ownership rule) — Wayland apps read XCURSOR_THEME from the env.
   home.pointerCursor = {
     enable = true;
     package = pkgs.bibata-cursors;

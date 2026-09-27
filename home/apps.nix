@@ -6,17 +6,12 @@
     spotify
   ];
 
-  # Obsidian vault <-> Google Drive via rclone bisync.
-  # One-time manual setup: `rclone config` to create the "gdrive" remote (OAuth
-  # can't be declared here), then a first `rclone bisync gdrive:Obsidian
-  # ~/GoogleDrive/Obsidian --resync`.
+  # Obsidian vault <-> Google Drive, one-time manual setup: `rclone config` for
+  # the "gdrive" remote, then a first `--resync` (OAuth can't be declared here).
   systemd.user.services.rclone-bisync-gdrive = {
     Unit = {
       Description = "Bisync ~/GoogleDrive/Obsidian with Google Drive remote";
-      # Without this the timer fails every 5 minutes on a machine where the
-      # one-time `rclone config` above hasn't been done yet (fresh install, or
-      # the other host). A failed Condition makes systemd skip the run silently
-      # instead, and the unit starts working on its own once the file appears.
+      # Skip instead of failing until `rclone config` has run on this host.
       ConditionPathExists = "%h/.config/rclone/rclone.conf";
     };
     Service = {

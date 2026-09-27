@@ -7,8 +7,7 @@ in
   programs.zed-editor = {
     enable = true;
     mutableUserSettings = true;
-    # EDITOR/VISUAL = `zeditor -w`; zed is the default editor now
-    defaultEditor = true;
+    defaultEditor = true; # EDITOR/VISUAL = zeditor -w
     extraPackages = lspPackages;
     extensions = [
       "nix"
@@ -17,8 +16,7 @@ in
       "env"
       "basedpyright"
       "markdown-oxide"
-      # Themes mapped from Noctalia's builtins by the sync hook in
-      # home/noctalia.nix. Gruvbox/Ayu ship with zed, no extension needed.
+      # Palette-sync map targets (home/noctalia.nix); gruvbox/ayu ship with zed.
       "tokyo-night"
       "catppuccin"
       "kanagawa-themes"
@@ -38,16 +36,14 @@ in
         diagnostics = false;
       };
       format_on_save = "on";
-      # Seed only — the hooks in home/noctalia.nix rewrite this block on
-      # palette/mode switch (settings.json is mutable; zed live-reloads it).
+      # Seed only — the hook in home/noctalia.nix rewrites this block.
       theme = {
         mode = "system";
         dark = "Catppuccin Mocha";
         light = "Catppuccin Latte";
       };
-      # Everything docks right, nothing on the left. Panels are keyboard
-      # toggles (ctrl-shift-e/g/b, ctrl-b toggles the whole dock, agent is
-      # ctrl-? / ctrl-alt-i / ctrl-alt-m), so the status-bar buttons stay hidden.
+      # Everything docks right; panels are keyboard toggles, so the
+      # status-bar buttons stay hidden.
       project_panel = {
         dock = "right";
         button = false;
@@ -68,14 +64,11 @@ in
         dock = "right"; # upstream default is left
         button = false;
         sidebar_side = "right"; # the panel's threads sidebar
-        # Auto-approve tool calls (incl. terminal commands) without prompting.
+        # Auto-approve agent tool calls; font matches buffer_font_size.
         tool_permissions.default = "allow";
-        # The message input box is monospace (like the editor); bump from 12 to
-        # match buffer_font_size so typing doesn't feel cramped.
         agent_buffer_font_size = 16;
       };
-      # Built-in which-key: holds a key combo briefly → shows available
-      # follow-up keys. Handy for discovering vim/bindings as you go.
+      # Hold a combo briefly to see available follow-up keys.
       which_key = {
         enabled = true;
         delay_ms = 500;
@@ -85,8 +78,7 @@ in
         show_tab_bar_buttons = false;
       };
       languages = {
-        # The registry "Nix" extension declares nil as its LSP; we use nixd
-        # instead (it ships via extraPackages and is already configured above).
+        # Registry declares nil; use nixd (ships via extraPackages).
         Nix = {
           language_servers = [ "nixd" "!nil" ];
         };
@@ -105,10 +97,9 @@ in
       {
         context = "Workspace";
         bindings = {
-          # Hide/show the whole right dock — panel ToggleFocus actions only
-          # move focus, they never close the panel.
+          # Toggle the whole right dock — panel ToggleFocus only moves focus.
           "ctrl-b" = "workspace::ToggleRightDock";
-          # Direct agent toggle (stock: ctrl-?, ctrl-alt-i in the VSCode map)
+          # Extra agent toggle next to the stock ctrl-? / ctrl-alt-i.
           "ctrl-alt-m" = "agent::ToggleFocus";
         };
       }

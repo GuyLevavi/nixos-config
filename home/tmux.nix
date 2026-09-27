@@ -9,11 +9,9 @@ in
 {
   home.packages = [ inputs.workmux.packages.${system}.default ];
 
-  # Functional plugins are deliberately absent — the old sensible/yank/
-  # resurrect/continuum/catppuccin set is inlined or dropped. Colours come from
-  # palette.conf, written at runtime by noctalia-tmux-theme (home/noctalia.nix)
-  # so tmux follows the Noctalia palette; the ANSI block below is the fallback
-  # until the first sync runs. workmux restores `resurrect`'s useful half.
+  # No functional plugins. Colours come from palette.conf, written at runtime by
+  # noctalia-tmux-theme (home/noctalia.nix); the ANSI block below is the
+  # fallback until the first sync runs.
   programs.tmux = {
     enable = true;
     prefix = "C-a";
@@ -31,21 +29,21 @@ in
       set -g allow-passthrough on      # yazi/editor inline images
       set -g focus-events on
       set -g renumber-windows on
-      set -g set-clipboard on          # the old yank plugin, inlined
+      set -g set-clipboard on
       set -g display-time 4000
       set -g status-interval 5
       bind C-p previous-window
       bind C-n next-window
       bind R source-file ~/.config/tmux/tmux.conf \; display "reloaded"
 
-      # copy-mode vi (yank plugin, inlined)
+      # copy-mode vi
       set -g mode-keys vi
       bind -T copy-mode-vi v send -X begin-selection
       bind -T copy-mode-vi V send -X select-line
       bind -T copy-mode-vi y send -X copy-selection-and-cancel
       bind -T copy-mode-vi Escape send -X cancel
 
-      # splits + pane nav (old config; smart-splits dropped — no nvim now)
+      # splits + pane nav
       bind | split-window -h -c "#{pane_current_path}"
       bind - split-window -v -c "#{pane_current_path}"
       unbind '"'
@@ -80,8 +78,8 @@ in
 
       source-file -q ~/.config/tmux/palette.conf
 
-      # workmux — status_format is off in config.yaml so this format owns the
-      # bar; @workmux_status is the agent icon workmux sets per window.
+      # workmux: status_format is off in config.yaml, so this format owns the
+      # bar; @workmux_status is the per-window agent icon workmux sets.
       bind C-s display-popup -E -h 80% -w 90% "workmux dashboard"
       bind Tab run-shell "workmux last-agent"
       bind w run-shell "workmux last-done"
@@ -95,8 +93,7 @@ in
       agent: opencode
       status_format: false
     '';
-    # workmux's OpenCode lifecycle plugin (status hooks). Taken from the same
-    # pinned revision as the package so the two never skew.
+    # From the same pinned revision as the package so the two never skew.
     "opencode/plugins/workmux-status.ts".source =
       "${inputs.workmux}/resources/opencode/plugins/workmux-status.ts";
   };

@@ -1,24 +1,9 @@
 { pkgs, ... }:
 {
   programs = {
-    # bash stays the login shell (modules/core.nix) so scripts/systemd/`bash -c`
-    # keep POSIX semantics; it execs into fish on interactive start.
-    #
-    # The guard is the *parent process*, not an exported marker. The marker this
-    # used to use (BASH_EXECS_FISH=1, set just before the exec) was inherited by
-    # every descendant of the fish session, so anything that later spawned
-    # $SHELL from inside it — an editor's integrated terminal, a tmux pane,
-    # anything started from an already-fish terminal — found the marker set and
-    # stayed in bare bash: no starship, no aliases, no atuin. Parent-is-fish is
-    # the one case that must not bounce back: you typed `bash` at a fish prompt
-    # and meant it.
-    #
-    # The -t checks keep GUI tools alive: Zed captures its environment by
-    # spawning `bash -l -i -c` with no terminal attached, and an unconditional
-    # exec replaces bash before the -c command runs — fish starts reading stdin
-    # instead, the capture finds no JSON, and every worktree loses its PATH
-    # (nixd "not available in your environment"). No tty -> stay in bash and
-    # let the capture command run.
+    # Keep bash as login shell (modules/core.nix); exec into fish on interactive
+    # start, unless the parent is fish (you typed it) or there's no tty (Zed's
+    # env capture runs `bash -l -i -c`).
     bash = {
       enable = true;
       initExtra = ''
@@ -33,10 +18,8 @@
       enable = true;
       interactiveShellInit = ''
         set -g fish_greeting # no welcome banner
-        # nix-shell's interactive bash runs with --rcfile (stdenv setup) instead
-        # of sourcing ~/.bashrc, so the exec-to-fish guard never fires inside
-        # it. Wrap the command instead: --run fish starts fish (still interactive
-        # on a tty, so config.fish/starship load) with the nix env on PATH.
+        # nix-shell runs --rcfile, not ~/.bashrc, so the exec guard never
+        # fires; append --run fish to land in fish with the nix env on PATH.
         function nix-shell --wraps=nix-shell
           if string match -q -- '--run*' $argv
             command nix-shell $argv

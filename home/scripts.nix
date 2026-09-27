@@ -1,7 +1,5 @@
 { pkgs, lib, ... }:
 let
-  # writeShellScriptBin pins every dependency to a store path.
-
   screen-record = pkgs.writeShellScriptBin "screen-record" ''
     set -euo pipefail
     out="$HOME/Videos/$(date +%Y-%m-%d_%H-%M-%S).mp4"
@@ -30,11 +28,9 @@ let
     rb
   '';
 
-  # External-only monitor policy: disable eDP-1 while any external monitor is
-  # present; restore it once alone. Persisted via a sourced conf file, not
-  # `hyprctl keyword` — keywords reset on every reload (Noctalia triggers one
-  # per theme switch), which flapped the panel and shuffled workspaces.
-  # Syncs once at launch too, so booting already-docked works.
+  # External-only monitor policy: disable eDP-1 while docked, restore alone.
+  # State goes in a sourced conf, not a keyword — keywords reset on reload
+  # (Noctalia triggers one per theme switch), which flapped the panel.
   monitor-watch = pkgs.writeShellScriptBin "monitor-watch" ''
     set -euo pipefail
     internal="eDP-1"
@@ -71,9 +67,8 @@ in
     monitor-watch
   ];
 
-  # hyprland.conf sources monitor-state.conf, and Hyprland errors on a missing
-  # source — guarantee it exists before the first launch on a fresh install.
-  # monitor-watch owns its content from then on.
+  # hyprland.conf sources this; Hyprland errors on a missing source, so create
+  # it on a fresh install. monitor-watch owns its content from then on.
   home.activation.ensureMonitorStateConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     [ -f "$HOME/.config/hypr/monitor-state.conf" ] \
       || install -Dm644 /dev/null "$HOME/.config/hypr/monitor-state.conf"

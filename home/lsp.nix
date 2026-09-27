@@ -1,16 +1,7 @@
-# Shared language servers, declared once and routed onto each editor's PATH:
-#   zed      -> programs.zed-editor.extraPackages   (home/zed.nix)
-#   opencode -> wrapped PATH                        (home/programs.nix)
-#   nvim     -> programs.neovim.extraPackages, when it comes back
-# Add a server here and every consumer sees it; each editor config only has to
-# name the binary. The editor configs live in their own trees (zed userSettings,
-# ~/.config/opencode/opencode.jsonc) because each speaks a different dialect.
-#
-# Why we prefer the nix builds over letting each editor download its own:
-#   clang-tools            clangd = C/C++ LSP + formatter
-#   package-version-server zed's prebuilt binary can't run on NixOS
-#   markdown-oxide         Obsidian-style markdown LSP for ~/GoogleDrive/Obsidian
-# nixpkgs-fmt is not an LSP — it rides along because zed formats Nix with it.
+# Declared once, routed onto each editor's PATH: zed via extraPackages
+# (home/zed.nix), opencode via its wrapped PATH (home/programs.nix). Add a
+# server here and every consumer sees it. Prefer these builds over letting an
+# editor download its own.
 { pkgs }:
 with pkgs;
 [
