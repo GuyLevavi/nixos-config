@@ -4,13 +4,9 @@
   ...
 }:
 let
-  # Vimium, fetched at build time and pinned by hash, so the add-on lands in
-  # the store like any other dependency instead of being pulled from AMO on
-  # first launch. This is the unmodified, AMO-signed archive on purpose:
-  # pkgs.fetchFirefoxAddon rewrites manifest.json to inject a gecko id, which
-  # invalidates Mozilla's signature, and release Firefox refuses unsigned
-  # add-ons. Bump the file id, version and hash together from
-  # https://addons.mozilla.org/api/v5/addons/addon/vimium-ff/
+  # Pinned AMO-signed archive: pkgs.fetchFirefoxAddon rewrites manifest.json,
+  # which breaks signing, and release Firefox refuses unsigned add-ons. Bump
+  # file id, version and hash together from the AMO API.
   vimium = pkgs.fetchurl {
     name = "vimium-2.4.2.xpi";
     url = "https://addons.mozilla.org/firefox/downloads/file/4717567/vimium_ff-2.4.2.xpi";
@@ -20,9 +16,9 @@ in
 {
   imports = [ inputs.noctalia.nixosModules.default ];
 
-  # Pulls in the wayland session desktop file, xdg-desktop-portal-hyprland,
-  # xwayland, polkit and hardware.graphics. UWSM wraps the session in systemd
-  # scopes so graphical-session.target exists (the Noctalia user service needs it).
+  # Pulls in the wayland session desktop file, portals, xwayland, polkit and
+  # hardware.graphics; UWSM gives graphical-session.target, which the Noctalia
+  # user service needs.
   programs.hyprland = {
     enable = true;
     withUWSM = true;
@@ -34,21 +30,10 @@ in
     systemd.enable = false; # the user service in home/noctalia.nix owns this
   };
 
-  # Firefox is a `programs.*` block rather than a systemPackages entry only so
-  # that `policies` exists — enabling this already puts the wrapped package in
-  # systemPackages. Policies are the one declarative way to install an add-on
-  # without adding NUR as a flake input for a single extension, and they write
-  # /etc/firefox/policies/policies.json, never the user profile, so Noctalia
-  # keeps sole ownership of userChrome.css (see README "Who owns what").
-  # Any policy at all makes Firefox report itself as "managed by your
-  # organisation"; that is cosmetic.
-  #
-  # Vimium's own settings — keybindings, excluded URLs, search engines — are
-  # NOT seedable here. It reads them only from chrome.storage.sync, which
-  # Firefox keeps in storage-sync-v2.sqlite; home-manager's extension
-  # `settings` option writes browser-extension-data/*/storage.js, which backs
-  # storage.local and Vimium never reads. Set them once in Vimium's options
-  # page; nothing in this repo will overwrite them.
+  # programs.firefox (not the extension module) for `policies` — the only
+  # declarative add-on install without NUR. It writes /etc/firefox, so Noctalia
+  # keeps the profile. Vimium's settings live in chrome.storage.sync and are
+  # not seedable; set them once in its options page.
   programs.firefox = {
     enable = true;
     policies.ExtensionSettings."{d7742d87-e61d-4b78-b8a1-b469842139fa}" = {
@@ -74,10 +59,8 @@ in
       wireplumber.enable = true;
     };
 
-    # No driver packages pinned: modern printers are driverless IPP/AirPrint and
-    # CUPS finds them over mDNS. Add to services.printing.drivers only if some
-    # older model actually needs a PPD. NOTE: openFirewall here opens UDP 5353
-    # for mDNS discovery — that is the only port this config opens.
+    # Driverless IPP/AirPrint over mDNS; add drivers only for an old model.
+    # NOTE: openFirewall opens UDP 5353 — the only port this config opens.
     printing.enable = true;
     avahi = {
       enable = true;
@@ -88,17 +71,14 @@ in
     gvfs.enable = true; # Nautilus: mount drives
     tumbler.enable = true; # Nautilus: thumbnails
 
-    # Secret Service provider. Zed stores sign-in/provider credentials via
-    # org.freedesktop.secrets — with no keyring daemon running, sign-in works
-    # but is gone on the next app start. Not a settings.json thing.
+    # Secret Service for Zed's sign-in; without it, a sign-in lasts only until
+    # the app exits (org.freedesktop.secrets).
     gnome.gnome-keyring.enable = true;
   };
 
-  # tuigreet's cache dir (greetd above) and pipewire's realtime priority.
-  systemd.tmpfiles.rules = [ "d /var/cache/tuigreet 0755 greeter greeter - -" ];
-  security.rtkit.enable = true;
-  # Unlock the login keyring with the login password at greetd entry, so apps
-  # hitting org.freedesktop.secrets never prompt.
+  systemd.tmpfiles.rules = [ "d /var/cache/tuigreet 0755 greeter greeter - -" ]; # tuigreet cache
+  security.rtkit.enable = true; # pipewire realtime priority
+  # Unlock the login keyring at greetd, so secrets never prompt.
   security.pam.services.greetd.enableGnomeKeyring = true;
 
   fonts = {

@@ -11,12 +11,11 @@
       systemd-boot.configurationLimit = 10;
       efi.canTouchEfiVariables = true;
     };
-    tmp.cleanOnBoot = true; # /tmp otherwise accumulates across reboots
+    tmp.cleanOnBoot = true; # else /tmp persists
   };
 
-  # gpubox has swapDevices = [ ] and cpubox's is a slow disk partition, so give
-  # the kernel a compressed in-RAM pressure valve on both. Without any swap a
-  # memory spike under Steam is a straight OOM kill rather than a stall.
+  # Compressed in-RAM swap on both boxes: gpubox has none and cpubox's is a
+  # slow partition, so a memory spike under Steam would OOM-kill rather than stall.
   zramSwap.enable = true;
 
   nix.settings = {
@@ -40,8 +39,8 @@
   i18n.defaultLocale = "en_US.UTF-8";
   console.keyMap = "us";
 
-  # bash is the login shell so scripts/sudo -s/systemd stay POSIX; fish is
-  # layered on per-session in home/shell.nix.
+  # bash as login shell (POSIX for scripts/sudo/systemd); fish is layered on
+  # in home/shell.nix.
   users.users.${username} = {
     isNormalUser = true;
     description = username;
@@ -66,10 +65,7 @@
 
   programs.git.enable = true; # `nixos-rebuild --flake` needs git to see the repo
 
-  # openssh is deliberately OFF. It was enabled with PasswordAuthentication
-  # disabled and no authorizedKeys anywhere in the repo, so port 22 was open on
-  # two roaming laptops with no key that could actually log in — attack surface
-  # for zero capability. Re-enable it together with
-  # `users.users.${username}.openssh.authorizedKeys.keys`, never on its own.
+  # openssh is off on purpose — it was open on port 22 with no authorizedKeys
+  # anywhere. Only re-enable in the same commit that adds a key.
   services.openssh.enable = false;
 }

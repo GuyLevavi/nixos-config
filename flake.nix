@@ -9,34 +9,27 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Pinned to a tag deliberately (v5.0.1 is the first stable release after
-    # 10 betas) — bump with `nix flake lock --update-input noctalia` so
-    # breakage is opt-in, not whatever lands on the default branch.
+    # Pinned to a tag so breakage is opt-in; bump with
+    # `nix flake lock --update-input noctalia`.
     noctalia = {
       url = "github:noctalia-dev/noctalia/v5.0.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # opencode downgrade channel: 1.18.26–1.18.30 crash whenever the
-    # opencode-go gateway auth exists ("failed to send prompt (server error)"
-    # — TypeError in SystemPrompt.environment, verified 1.18.25 is clean).
-    # This is the last nixpkgs rev shipping 1.18.25; the overlay below swaps
-    # it in. Drop input + overlay together once a fixed opencode (> 1.18.30)
-    # is verified.
+    # Temporary opencode downgrade: 1.18.26–1.18.30 crash when the
+    # opencode-go gateway auth exists; this rev ships 1.18.25. Drop input and
+    # overlay together once a fixed opencode is verified.
     nixpkgs-opencode = {
       url = "github:NixOS/nixpkgs/d2f67949798825fe853f7c5d0492b8bf016d3f88";
     };
 
-    # Matt Pocock's engineering/productivity skills, vendored into the store by
-    # home/skills.nix. flake = false — the repo ships no flake.nix. Bumped by
-    # `update`; flake.lock is the rollback point.
+    # Vendored into the store by home/skills.nix; no flake.nix upstream.
     matt-skills = {
       url = "github:mattpocock/skills";
       flake = false;
     };
 
-    # workmux: git worktrees paired with tmux windows. home/tmux.nix takes the
-    # package, its global config, and the OpenCode status plugin from here.
+    # Package, global config and OpenCode plugin come from here (home/tmux.nix).
     workmux = {
       url = "github:raine/workmux";
       inputs.nixpkgs.follows = "nixpkgs";
