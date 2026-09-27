@@ -34,4 +34,10 @@
   };
 
   environment.systemPackages = with pkgs; [ nvtopPackages.nvidia ];
+
+  # btop dlopens libnvidia-ml.so.1; cudaSupport adds the /run/opengl-driver
+  # runpath that lets it resolve. No CUDA toolkit is pulled in.
+  nixpkgs.overlays = [
+    (final: prev: { btop = prev.btop.override { cudaSupport = true; }; })
+  ];
 }

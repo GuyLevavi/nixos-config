@@ -42,9 +42,9 @@ in
     eza.enable = true;
     ripgrep.enable = true;
 
-    # GPU support is compiled in; gpu0 = dGPU via NVML on gpubox, iGPU via
-    # i915 on cpubox. color_theme=noctalia keeps Noctalia's template hook a
-    # no-op against this read-only file.
+    # gpu0 = dGPU via NVML on gpubox (host overlay adds the driver runpath),
+    # iGPU via i915 on cpubox. color_theme=noctalia keeps Noctalia's template
+    # hook a no-op against this read-only file.
     btop = {
       enable = true;
       settings = {
