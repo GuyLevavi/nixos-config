@@ -7,172 +7,162 @@
   ...
 }:
 let
-  # Zed has no Noctalia template, so the palette reaches it here: the hooks
-  # below rewrite the theme block of ~/.config/zed/settings.json (mutable,
-  # live-reloaded by zed). Theme-name granularity — the zed-side seed and the
-  # extensions those names come from are in home/zed.nix.
-  zedThemeSync = pkgs.writeShellApplication {
-    name = "noctalia-zed-theme";
+  # Noctalia has no theme template for zed/opencode/tmux, so one hook script
+  # rewrites each consumer's theme file. Hooks run it with no argument ("all");
+  # subcommands exist for debugging. Theme names live in one table so the zed
+  # and opencode arms cannot drift.
+  builtinThemes = {
+    "Ayu" = { dark = "Ayu Dark"; light = "Ayu Light"; opencode = "ayu"; };
+    "Catppuccin" = { dark = "Catppuccin Mocha"; light = "Catppuccin Latte"; opencode = "catppuccin"; };
+    "Dracula" = { dark = "Dracula"; light = "Dracula Light (Alucard)"; opencode = "noctalia-dracula"; };
+    "Eldritch" = { dark = "Eldritch"; light = "Eldritch Dusk"; opencode = "noctalia-eldritch"; };
+    "Gruvbox" = { dark = "Gruvbox Dark"; light = "Gruvbox Light"; opencode = "gruvbox"; };
+    "Kanagawa" = { dark = "Kanagawa Wave"; light = "Kanagawa Lotus"; opencode = "kanagawa"; };
+    "Nord" = { dark = "Nord Dark"; light = "Nord Light"; opencode = "nord"; };
+    "Rosé Pine" = { dark = "Rosé Pine"; light = "Rosé Pine Dawn"; opencode = "noctalia-rose-pine"; };
+    "Tokyo-Night" = { dark = "Tokyo Night"; light = "Tokyo Night Light"; opencode = "tokyonight"; };
+  };
+  caseArms =
+    mk:
+    lib.concatStrings (
+      (map (n: mk n builtinThemes.${n}) (lib.attrNames builtinThemes))
+      ++ [ "          *) ;;" ]
+    );
+  zedCase = caseArms (n: t: "          \"${n}\") dark=\"${t.dark}\"; light=\"${t.light}\" ;;\n");
+  opencodeCase = caseArms (n: t: "          \"${n}\") theme=\"${t.opencode}\" ;;\n");
+
+  themeSync = pkgs.writeShellApplication {
+    name = "noctalia-theme-sync";
     runtimeInputs = [
       pkgs.jq
-      config.programs.noctalia.package
-    ];
-    text = ''
-      # "<source> <name>", e.g. "builtin Catppuccin". Empty when the IPC
-      # socket isn't up (tty, ssh, early boot) — then leave the file alone.
-      line="$(noctalia msg color-scheme-get 2>/dev/null || true)"
-      [ -n "$line" ] || exit 0
-      scheme_source="''${line%% *}"
-      scheme_name="''${line#* }"
-
-      mode="$(noctalia msg theme-mode-get 2>/dev/null || true)"
-      [ "$mode" = "light" ] || mode="dark"
-
-      # Fallback matches theme.builtin below. Only builtins map — wallpaper/
-      # community/custom palettes keep the fallback.
-      dark="Catppuccin Mocha"
-      light="Catppuccin Latte"
-      if [ "$scheme_source" = "builtin" ]; then
-        case "$scheme_name" in
-          "Tokyo-Night") dark="Tokyo Night";      light="Tokyo Night Light" ;;
-          "Catppuccin")  dark="Catppuccin Mocha"; light="Catppuccin Latte" ;;
-          "Gruvbox")     dark="Gruvbox Dark";     light="Gruvbox Light" ;;
-          "Kanagawa")    dark="Kanagawa Wave";    light="Kanagawa Lotus" ;;
-          "Rosé Pine")   dark="Rosé Pine";        light="Rosé Pine Dawn" ;;
-          "Ayu")         dark="Ayu Dark";         light="Ayu Light" ;;
-          "Nord")        dark="Nord Dark";        light="Nord Light" ;;
-          "Dracula")     dark="Dracula";          light="Dracula Light (Alucard)" ;;
-          "Eldritch")    dark="Eldritch";         light="Eldritch Dusk" ;;
-          *) ;;
-        esac
-      fi
-
-      cfg="''${XDG_CONFIG_HOME:-$HOME/.config}/zed/settings.json"
-      mkdir -p "$(dirname "$cfg")"
-      [ -f "$cfg" ] || printf '{}\n' >"$cfg"
-
-      # No-op when already in sync — every write triggers a zed settings reload.
-      if jq -e --arg d "$dark" --arg l "$light" --arg m "$mode" \
-        '.theme.mode == $m and .theme.dark == $d and .theme.light == $l' "$cfg" >/dev/null 2>&1; then
-        exit 0
-      fi
-
-      # write-then-rename so zed never reads a half-written file
-      jq --arg d "$dark" --arg l "$light" --arg m "$mode" \
-        '.theme = {mode: $m, dark: $d, light: $l}' "$cfg" >"$cfg.tmp"
-      mv -f "$cfg.tmp" "$cfg"
-    '';
-  };
-  syncZedTheme = lib.getExe zedThemeSync;
-
-  # OpenCode TUI theme sync. OpenCode reads theme from tui.json and has
-  # built-in themes for catppuccin, tokyonight, gruvbox, kanagawa, nord, ayu.
-  # For Rosé Pine, Dracula, Eldritch we create custom theme files.
-  opencodeThemeSync = pkgs.writeShellApplication {
-    name = "noctalia-opencode-theme";
-    runtimeInputs = [
-      pkgs.jq
-      config.programs.noctalia.package
-    ];
-    text = ''
-      line="$(noctalia msg color-scheme-get 2>/dev/null || true)"
-      [ -n "$line" ] || exit 0
-      scheme_source="''${line%% *}"
-      scheme_name="''${line#* }"
-
-      mode="$(noctalia msg theme-mode-get 2>/dev/null || true)"
-      [ "$mode" = "light" ] || mode="dark"
-
-      # Map Noctalia builtins to OpenCode theme names
-      theme="catppuccin"  # fallback
-      if [ "$scheme_source" = "builtin" ]; then
-        case "$scheme_name" in
-          "Tokyo-Night") theme="tokyonight" ;;
-          "Catppuccin")  theme="catppuccin" ;;
-          "Gruvbox")     theme="gruvbox" ;;
-          "Kanagawa")    theme="kanagawa" ;;
-          "Ayu")         theme="ayu" ;;
-          "Nord")        theme="nord" ;;
-          # Rosé Pine, Dracula, Eldritch use custom themes synced here
-          "Rosé Pine")   theme="noctalia-rose-pine" ;;
-          "Dracula")     theme="noctalia-dracula" ;;
-          "Eldritch")    theme="noctalia-eldritch" ;;
-          *) ;;
-        esac
-      fi
-
-      cfg="''${XDG_CONFIG_HOME:-$HOME/.config}/opencode/tui.json"
-      mkdir -p "$(dirname "$cfg")"
-      [ -f "$cfg" ] || printf '{}\n' >"$cfg"
-
-      # No-op when already in sync
-      if jq -e --arg t "$theme" '.theme == $t' "$cfg" >/dev/null 2>&1; then
-        exit 0
-      fi
-
-      # write-then-rename so opencode never reads a half-written file
-      jq --arg t "$theme" '.theme = $t' "$cfg" >"$cfg.tmp"
-      mv -f "$cfg.tmp" "$cfg"
-    '';
-  };
-  syncOpencodeTheme = lib.getExe opencodeThemeSync;
-
-  # tmux has no Noctalia template, so the palette reaches it by hook like Zed
-  # and OpenCode. Colours are read from the ghostty theme Noctalia already
-  # writes (the same palette the terminal uses), so community/custom palettes
-  # work too — not just the builtin names. Writes ~/.config/tmux/palette.conf,
-  # which home/tmux.nix sources; the ANSI block there is the fallback until
-  # this first runs.
-  tmuxThemeSync = pkgs.writeShellApplication {
-    name = "noctalia-tmux-theme";
-    runtimeInputs = [
       pkgs.gawk
       pkgs.tmux
       config.programs.noctalia.package
     ];
     text = ''
-      theme="''${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/themes/noctalia"
-      [ -f "$theme" ] || exit 0
+      cfg="''${XDG_CONFIG_HOME:-$HOME/.config}"
 
-      # Declared so shellcheck sees them; the eval below is what sets them.
-      p0="" p4="" p5="" p7="" p8=""
-      eval "$(awk -F= '
-        /^palette = / { gsub(/[[:space:]]/, "", $2); gsub(/[[:space:]]/, "", $3); print "p" $2 "=" $3 }
-      ' "$theme")"
-      [ -n "$p4" ] || exit 0
+      # Reads $source/$name/$mode; fails when the IPC socket is down
+      # (tty, ssh, early boot) — callers then leave their file alone.
+      get_scheme() {
+        local line
+        line="$(noctalia msg color-scheme-get 2>/dev/null || true)"
+        [ -n "$line" ] || return 1
+        source="''${line%% *}"
+        name="''${line#* }"
+        mode="$(noctalia msg theme-mode-get 2>/dev/null || true)"
+        [ "$mode" = "light" ] || mode="dark"
+      }
 
-      out="''${XDG_CONFIG_HOME:-$HOME/.config}/tmux/palette.conf"
-      mkdir -p "$(dirname "$out")"
-      {
-        printf 'set -g status-style "bg=%s,fg=%s"\n' "$p0" "$p7"
-        printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$p4" "$p0" "$p0" "$p4"
-        printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$p4"
-        printf 'setw -g window-status-style "fg=%s,bg=%s"\n' "$p8" "$p0"
-        printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$p4"
-        printf 'set -g message-style "bg=%s,fg=%s"\n' "$p8" "$p7"
-        printf 'set -g mode-style "bg=%s,fg=%s"\n' "$p4" "$p0"
-        printf 'setw -g clock-mode-colour "%s"\n' "$p5"
-        printf 'set -g pane-border-style "fg=%s"\n' "$p8"
-        printf 'set -g pane-active-border-style "fg=%s"\n' "$p4"
-        printf 'set -g popup-style "bg=%s,fg=%s"\n' "$p0" "$p7"
-        printf 'set -g popup-border-style "fg=%s"\n' "$p8"
-      } >"$out.tmp"
+      # theme block of ~/.config/zed/settings.json; seed in home/zed.nix, and
+      # zed live-reloads the file.
+      sync_zed() {
+        get_scheme || return 0
+        local dark="Catppuccin Mocha" light="Catppuccin Latte" target
+        if [ "$source" = "builtin" ]; then
+          case "$name" in
+      ${zedCase}
+          esac
+        fi
 
-      # No-op when already in sync — avoids a needless live reload.
-      if cmp -s "$out.tmp" "$out" 2>/dev/null; then
-        rm -f "$out.tmp"
-        exit 0
-      fi
-      mv -f "$out.tmp" "$out"
+        target="$cfg/zed/settings.json"
+        mkdir -p "$(dirname "$target")"
+        [ -f "$target" ] || printf '{}\n' >"$target"
 
-      # Apply in place if a server is running; a no-op at login.
-      tmux source-file "$out" >/dev/null 2>&1 || true
+        # Unchanged -> no write; every write makes zed reload settings.
+        if jq -e --arg d "$dark" --arg l "$light" --arg m "$mode" \
+          '.theme.mode == $m and .theme.dark == $d and .theme.light == $l' "$target" >/dev/null 2>&1; then
+          return 0
+        fi
+
+        # write-then-rename so zed never reads a half-written file
+        jq --arg d "$dark" --arg l "$light" --arg m "$mode" \
+          '.theme = {mode: $m, dark: $d, light: $l}' "$target" >"$target.tmp"
+        mv -f "$target.tmp" "$target"
+      }
+
+      # theme of ~/.config/opencode/tui.json; custom files below for the
+      # palettes OpenCode has no builtin for.
+      sync_opencode() {
+        get_scheme || return 0
+        local theme="catppuccin" target
+        if [ "$source" = "builtin" ]; then
+          case "$name" in
+      ${opencodeCase}
+          esac
+        fi
+
+        target="$cfg/opencode/tui.json"
+        mkdir -p "$(dirname "$target")"
+        [ -f "$target" ] || printf '{}\n' >"$target"
+
+        if jq -e --arg t "$theme" '.theme == $t' "$target" >/dev/null 2>&1; then
+          return 0
+        fi
+
+        jq --arg t "$theme" '.theme = $t' "$target" >"$target.tmp"
+        mv -f "$target.tmp" "$target"
+      }
+
+      # palette.conf for home/tmux.nix, parsed from the ghostty theme Noctalia
+      # already writes (so community/custom palettes work too).
+      sync_tmux() {
+        local theme_file="$cfg/ghostty/themes/noctalia" out
+        [ -f "$theme_file" ] || return 0
+
+        local p0="" p4="" p5="" p7="" p8=""
+        eval "$(awk -F= '
+          /^palette = / { gsub(/[[:space:]]/, "", $2); gsub(/[[:space:]]/, "", $3); print "p" $2 "=" $3 }
+        ' "$theme_file")"
+        [ -n "$p4" ] || return 0
+
+        out="$cfg/tmux/palette.conf"
+        mkdir -p "$(dirname "$out")"
+        {
+          printf 'set -g status-style "bg=%s,fg=%s"\n' "$p0" "$p7"
+          printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$p4" "$p0" "$p0" "$p4"
+          printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$p4"
+          printf 'setw -g window-status-style "fg=%s,bg=%s"\n' "$p8" "$p0"
+          printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$p4"
+          printf 'set -g message-style "bg=%s,fg=%s"\n' "$p8" "$p7"
+          printf 'set -g mode-style "bg=%s,fg=%s"\n' "$p4" "$p0"
+          printf 'setw -g clock-mode-colour "%s"\n' "$p5"
+          printf 'set -g pane-border-style "fg=%s"\n' "$p8"
+          printf 'set -g pane-active-border-style "fg=%s"\n' "$p4"
+          printf 'set -g popup-style "bg=%s,fg=%s"\n' "$p0" "$p7"
+          printf 'set -g popup-border-style "fg=%s"\n' "$p8"
+        } >"$out.tmp"
+
+        # Unchanged -> no write, no needless live reload.
+        if cmp -s "$out.tmp" "$out" 2>/dev/null; then
+          rm -f "$out.tmp"
+          return 0
+        fi
+        mv -f "$out.tmp" "$out"
+
+        # Apply in place if a server is running; a no-op at login.
+        tmux source-file "$out" >/dev/null 2>&1 || true
+      }
+
+      case "''${1:-all}" in
+        zed) sync_zed ;;
+        opencode) sync_opencode ;;
+        tmux) sync_tmux ;;
+        all)
+          sync_zed || true
+          sync_opencode || true
+          sync_tmux || true
+          ;;
+        *)
+          echo "usage: $0 [zed|opencode|tmux]" >&2
+          exit 2
+          ;;
+      esac
     '';
   };
-  syncTmuxTheme = lib.getExe tmuxThemeSync;
+  syncTheme = lib.getExe themeSync;
 
-  # Custom OpenCode theme files for palettes without built-in support.
-  # These live in ~/.config/opencode/themes/ and override by name.
+  # Custom OpenCode themes for palettes without a builtin twin.
   opencodeThemes = {
     "noctalia-rose-pine.json" = {
       "$schema" = "https://opencode.ai/theme.json";
@@ -387,8 +377,7 @@ let
     };
   };
 
-  # One material for all five islands. `padding` here feeds capsule_radius
-  # (concentric rule: 8 - 6 = 2), so edit the two together.
+  # One material for the five islands; padding feeds the pills' 2px radius (8 - 6).
   mkGroup = id: members: {
     inherit id members;
     fill = "surface";
@@ -397,15 +386,11 @@ let
     radius = 8; # matches hypr/hyprland.conf decoration.rounding
   };
 
-  # CPU and GPU each get their own island, on separate capsule groups. GPU
-  # gauges only where they are meaningful: gpubox is PRIME sync, so the dGPU is
-  # always awake and Noctalia reports the RTX 4060 through NVML (usage + real
-  # VRAM + temp). cpubox's Intel iGPU has no VRAM to report, so cpubox shows no
-  # GPU island at all. GPU probes only run while a GPU stat is displayed, so the
-  # gpubox-only island is also what gates the 5s wakeups.
+  # gpubox is PRIME sync (dGPU always on, real NVML stats); cpubox's iGPU has no
+  # VRAM and shows no GPU island at all. Nothing polls GPU stats unless a GPU
+  # widget is displayed.
   statsMembers = [ "cpu" "ram" "cputemp" ];
-  # Mirrors the CPU island's order -- usage, memory, temperature -- so VRAM
-  # comes before temp, matching cpu/ram/cputemp.
+  # Mirrors the CPU island: usage, memory, temp.
   gpuMembers = [ "gpu" "gpuvram" "gputemp" ];
 in
 {
@@ -415,45 +400,29 @@ in
     enable = true;
     systemd.enable = true; # user service, bound to graphical-session.target
 
-    # Seeds ~/.config/noctalia/config.toml (loaded first). The Settings GUI
-    # writes ~/.local/state/noctalia/settings.toml, which overrides per-key —
-    # so the GUI keeps working; these are just the declarative defaults.
+    # Seeds ~/.config/noctalia/config.toml; the GUI's
+    # ~/.local/state/noctalia/settings.toml overrides per-key.
     #
-    # GOTCHA: touching bar settings in the GUI copies the WHOLE [bar.default]
-    # table into settings.toml, which then shadows everything below and makes
-    # edits here look like they did nothing. Strip that section from
-    # settings.toml after changing bar geometry.
+    # GOTCHA: touching [bar.default] in the GUI copies the whole table into
+    # settings.toml, shadowing everything below — strip it after geometry edits.
     settings = {
-      # One constant, 8, shared with gaps_out in hypr/hyprland.conf: islands
-      # sit 8 from the screen edges (margin_edge / padding), 8 apart
-      # (widget_spacing), and 8 above the windows. That last one is free —
-      # the exclusive zone ends at the bar, so gaps_out supplies the gap.
-      # margin_ends and padding STACK on the main axis, so margin_ends stays 0.
+      # One constant, 8: islands sit 8 from the screen edges, 8 apart, 8 above
+      # the windows (gaps_out supplies the last). margin_ends must stay 0 — it
+      # stacks with padding.
       bar.default = {
         background_opacity = 0.0;
-        shadow = false; # a bar-wide shadow rect was the real source of "haze" in the gaps, not blur
+        shadow = false; # a bar-wide shadow hazes the top of the windows below
         margin_edge = 8;
         margin_ends = 0;
-        concave_edge_corners = false; # needs margin_edge = 0, which we float past
-        thickness = 30; # stock default is 34; compact DMS-style footprint
-        padding = 8; # lane inset: keeps island outer edges on the window grid
-        # One knob for both island-to-island and widget-to-widget gaps; there
-        # is no separate group-spacing key.
-        widget_spacing = 8;
-        # stock 0.76 leaves the islands floating inside the strip; 1.0 puts
-        # their top edge exactly at margin_edge, on the grid
-        capsule_thickness = 1.0;
-        # Not just for capsule mode — Noctalia also uses this for the workspace
-        # pills nested inside the left island. Concentric radius: the island is
-        # 8 with 6 of inner padding, so the pills want 8 - 6 = 2.
-        capsule_radius = 2;
-        # Lane anchoring decides which islands jitter. `start` is left-anchored
-        # and grows rightward, so anything placed after "left" is shoved around
-        # every time the active window title changes length. `end` is
-        # right-anchored: stats and sys are fixed-width, so the media island's
-        # right edge is pinned at a constant x and it grows leftward under its
-        # own title only. That is why media sits at the head of `end` -- just
-        # right of the centre clock -- and not second-from-left.
+        concave_edge_corners = false; # needs margin_edge = 0
+        thickness = 30; # stock is 34; compact DMS-style footprint
+        padding = 8; # lane inset: island edges on the window grid
+        widget_spacing = 8; # island and widget gaps share one knob
+        capsule_thickness = 1.0; # islands fill the strip; top edge at margin_edge
+        capsule_radius = 2; # pills sit 6 inside the 8px island (concentric)
+        # `end` is right-anchored, so media at its head keeps a fixed right
+        # edge while its title changes; under `start` the active-window title
+        # would shove it around.
         start = [ "group:left" ];
         center = [ "group:mid" ];
         end =
@@ -486,11 +455,9 @@ in
           ];
       };
 
-      # DMS-style resource indicators (sysmon gauges) + media player display,
-      # referenced by the capsule groups above.
+      # Resource gauges + media; referenced by the capsule groups above.
       widget = {
-        # Fills the dead space between workspaces and the clock. Scrolling
-        # titles are a marquee in peripheral vision all day; leave it off.
+        # Scrolling titles are a marquee in peripheral vision; keep off.
         active_window = {
           max_length = 260;
           title_scroll = "none";
@@ -511,15 +478,11 @@ in
           type = "sysmon";
           stat = "cpu_temp";
         };
-        # Icon only — the SSID/interface name is redundant with the network
-        # widget's own hover/expanded view.
+        # Icon only; the expanded view has the SSID.
         network.show_label = false;
       }
       // lib.optionalAttrs (hostName == "gpubox") {
-        # Glyphs mirror the CPU island row-for-row: usage -> speedometer,
-        # memory -> chip, temperature -> flame. Without the override the GPU
-        # island defaults to monitor (gpu-usage), thermometer (temperature) and
-        # chip, so only the memory row lined up with the CPU island.
+        # Glyphs mirror the CPU island row-for-row.
         gpu = {
           type = "sysmon";
           stat = "gpu_usage";
@@ -536,48 +499,32 @@ in
         };
       };
 
-      # Concentric radius: windows are rounding = 8 sitting 8 inside the
-      # screen, so the screen's own corner is 8 + 8.
+      # 8 (window rounding) + 8 (gaps_out) = 16.
       shell.screen_corners = {
         enabled = true;
         size = 16;
       };
 
-      # Idle policy — Noctalia's own daemon, which replaced hypridle. Every
-      # action hypridle took was already a Noctalia one (`noctalia msg session
-      # lock`, dpms), so it was a timer wrapped around this; running the timer
-      # in-process also removes the logind `Lock` round trip that used to let
-      # lock_cmd re-enter itself. Lock-before-suspend needs no key here:
-      # Noctalia takes a logind sleep-delay inhibit on PrepareForSleep and
-      # locks first, which covers lid close and `systemctl suspend` too.
+      # Noctalia owns idle (hypridle was just a timer around these same actions);
+      # it locks before suspend via logind's PrepareForSleep.
       #
-      # GOTCHA, same as [bar.default] above: opening Settings → Idle in the GUI
-      # copies this whole table into ~/.local/state/noctalia/settings.toml,
-      # which then shadows everything below.
+      # GOTCHA: as with [bar.default], opening Settings → Idle in the GUI copies
+      # this table into settings.toml and shadows everything below.
       idle = {
-        # Fades a fullscreen overlay in over this many seconds before the
-        # action, cancelling on any input. This is what replaces hypridle's
-        # 150s `brightnessctl -s set 10` dim-as-warning listener — and the
-        # reason that listener could not just be ported as a custom behavior:
-        # the fade is global, so the dim would have drawn an overlay over
-        # itself.
+        # Fullscreen fade before the action; cancels on input. Global, not
+        # per-behavior.
         pre_action_fade_seconds = 3.0;
 
         behavior = {
-          # Long timeouts on purpose: this box is left running unattended
-          # overnight and through the workday so a phone can reach the
-          # sessions on it. Locking is free — it hides the screen without
-          # touching anything underneath. Suspending is not, which is why
-          # there is no enabled suspend behavior below.
+          # Long timeouts: the machine is left unattended so a phone can reach
+          # the sessions; locking hides the screen for free.
           lock = {
             enabled = true;
             action = "lock";
             timeout = 1800; # 30 min
           };
 
-          # `locked_timeout` is a second, shorter timeout that applies only
-          # once the session is already locked — so an unattended machine
-          # blanks 2 min after locking rather than sitting lit for another 40.
+          # This second, shorter timeout applies only once already locked.
           "screen-off" = {
             enabled = true;
             action = "screen_off";
@@ -585,12 +532,8 @@ in
             locked_timeout = 120; # 2 min once locked
           };
 
-          # Declared and off. Flipping `enabled` is the single edit that stops
-          # this machine answering the phone, so it stays visible here rather
-          # than being an absent stanza nobody remembers deciding against. The
-          # battery backstop is logind's HandleLidSwitch = "suspend"
-          # (modules/laptop.nix), which still fires on lid close off AC — on
-          # AC it is "ignore", so the lid can stay shut overnight.
+          # Declared and off: suspending would cut off remote sessions. Lid
+          # close off AC is the backstop (modules/laptop.nix).
           suspend = {
             enabled = false;
             action = "lock_and_suspend";
@@ -600,12 +543,11 @@ in
       };
 
 
-      # Zed, OpenCode and tmux follow the palette through their sync hooks
-      # (above); `started` covers a fresh login where the palette never changes.
+      # Palette sync on every change and at login.
       hooks = {
-        started = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
-        colors_changed = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
-        theme_mode_changed = [ syncZedTheme syncOpencodeTheme syncTmuxTheme ];
+        started = [ syncTheme ];
+        colors_changed = [ syncTheme ];
+        theme_mode_changed = [ syncTheme ];
       };
 
       theme = {
@@ -620,30 +562,19 @@ in
             "qt"
             "starship"
           ];
-          # zed is synced by the hooks above instead of a template.
+          # zed/opencode/tmux sync via the hooks above.
           community_ids = [ ];
         };
       };
     };
   };
 
-  # A rebuild re-seeds settings.json from home/zed.nix (Nix wins the merge)
-  # and `started` doesn't fire on an already-running session — re-sync here so
-  # the palette survives `rb` without a re-login. The scripts no-op when the
-  # noctalia IPC is down.
-  home.activation.zedThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
-    run ${syncZedTheme} || true
+  # A rebuild re-seeds the Nix theme block into settings.json (Nix wins the
+  # merge) and `started` doesn't fire on a live session — re-sync after it.
+  home.activation.themeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
+    run ${syncTheme} || true
   '';
 
-  home.activation.opencodeThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
-    run ${syncOpencodeTheme} || true
-  '';
-
-  home.activation.tmuxThemeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
-    run ${syncTmuxTheme} || true
-  '';
-
-  # Custom OpenCode themes for palettes without built-in support.
   xdg.configFile = lib.mapAttrs' (name: value:
     lib.nameValuePair "opencode/themes/${name}" {
       source = pkgs.writeText "${name}" (builtins.toJSON value);
