@@ -22,6 +22,7 @@ in
       enable = true;
       settings = {
         theme = "noctalia";
+        command = "tmux new-session -A -s main";
         font-family = "JetBrainsMono Nerd Font";
         font-size = 14;
         window-decoration = false;
