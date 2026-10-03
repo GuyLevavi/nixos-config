@@ -5,7 +5,6 @@
   services = {
     # power-profiles-daemon comes from Noctalia's recommendedServices; TLP
     # conflicts and has no D-Bus interface for the shell's power widget.
-    upower.enable = true;
     thermald.enable = true; # Intel; harmless on AMD
 
     logind.settings.Login = {
@@ -15,16 +14,6 @@
     };
 
     fwupd.enable = true;
-
-    # Hyprland reads its own input config; libinput is for the greeter.
-    libinput = {
-      enable = true;
-      touchpad = {
-        naturalScrolling = true;
-        tapping = true;
-        disableWhileTyping = true;
-      };
-    };
   };
 
   # thermald on this box falls back to non-adaptive mode via a systemd restart;
@@ -32,7 +21,6 @@
   systemd.services.thermald.unitConfig.Restart = "on-failure";
 
   hardware.bluetooth = {
-    enable = true;
     powerOnBoot = false; # the shell's toggle owns this
   };
 

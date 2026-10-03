@@ -56,7 +56,6 @@ in
       alsa.enable = true;
       alsa.support32Bit = true;
       pulse.enable = true;
-      wireplumber.enable = true;
     };
 
     # Driverless IPP/AirPrint over mDNS; add drivers only for an old model.
@@ -97,7 +96,6 @@ in
   };
 
   xdg.portal = {
-    enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ]; # file chooser
     config.common.default = "*";
   };

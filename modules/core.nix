@@ -36,8 +36,6 @@
   networking.hostName = hostName;
   networking.networkmanager.enable = true;
   time.timeZone = "Asia/Jerusalem";
-  i18n.defaultLocale = "en_US.UTF-8";
-  console.keyMap = "us";
 
   # bash as login shell (POSIX for scripts/sudo/systemd); fish is layered on
   # in home/shell.nix.
