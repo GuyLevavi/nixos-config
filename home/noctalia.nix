@@ -7,20 +7,19 @@
   ...
 }:
 let
-  # Noctalia has no theme template for zed/opencode/tmux, so one hook script
-  # rewrites each consumer's theme file. Hooks run it with no argument ("all");
-  # subcommands exist for debugging. Theme names live in one table so the zed
-  # and opencode arms cannot drift.
+  # Noctalia has no theme template for zed/tmux/nvim, so one hook script
+  # rewrites each consumer's theme file. Theme names live in one table so the
+  # arms cannot drift from the palette Noctalia reports.
   builtinThemes = {
-    "Ayu" = { dark = "Ayu Dark"; light = "Ayu Light"; opencode = "ayu"; };
-    "Catppuccin" = { dark = "Catppuccin Mocha"; light = "Catppuccin Latte"; opencode = "catppuccin"; };
-    "Dracula" = { dark = "Dracula"; light = "Dracula Light (Alucard)"; opencode = "noctalia-dracula"; };
-    "Eldritch" = { dark = "Eldritch"; light = "Eldritch Dusk"; opencode = "noctalia-eldritch"; };
-    "Gruvbox" = { dark = "Gruvbox Dark"; light = "Gruvbox Light"; opencode = "gruvbox"; };
-    "Kanagawa" = { dark = "Kanagawa Wave"; light = "Kanagawa Lotus"; opencode = "kanagawa"; };
-    "Nord" = { dark = "Nord Dark"; light = "Nord Light"; opencode = "nord"; };
-    "Rosé Pine" = { dark = "Rosé Pine"; light = "Rosé Pine Dawn"; opencode = "noctalia-rose-pine"; };
-    "Tokyo-Night" = { dark = "Tokyo Night"; light = "Tokyo Night Light"; opencode = "tokyonight"; };
+    "Ayu" = { dark = "Ayu Dark"; light = "Ayu Light"; nvim = { dark = "ayu-mirage"; light = "ayu-light"; }; };
+    "Catppuccin" = { dark = "Catppuccin Mocha"; light = "Catppuccin Latte"; nvim = { dark = "catppuccin-mocha"; light = "catppuccin-latte"; }; };
+    "Dracula" = { dark = "Dracula"; light = "Dracula Light (Alucard)"; nvim = { dark = "dracula"; light = "dracula"; }; };
+    "Eldritch" = { dark = "Eldritch"; light = "Eldritch Dusk"; nvim = { dark = "eldritch"; light = "eldritch"; }; };
+    "Gruvbox" = { dark = "Gruvbox Dark"; light = "Gruvbox Light"; nvim = { dark = "gruvbox"; light = "gruvbox"; }; };
+    "Kanagawa" = { dark = "Kanagawa Wave"; light = "Kanagawa Lotus"; nvim = { dark = "kanagawa-wave"; light = "kanagawa-lotus"; }; };
+    "Nord" = { dark = "Nord Dark"; light = "Nord Light"; nvim = { dark = "nord"; light = "nord"; }; };
+    "Rosé Pine" = { dark = "Rosé Pine"; light = "Rosé Pine Dawn"; nvim = { dark = "rose-pine"; light = "rose-pine-dawn"; }; };
+    "Tokyo-Night" = { dark = "Tokyo Night"; light = "Tokyo Night Light"; nvim = { dark = "tokyonight-night"; light = "tokyonight-day"; }; };
   };
   caseArms =
     mk:
@@ -29,7 +28,7 @@ let
       ++ [ "          *) ;;" ]
     );
   zedCase = caseArms (n: t: "          \"${n}\") dark=\"${t.dark}\"; light=\"${t.light}\" ;;\n");
-  opencodeCase = caseArms (n: t: "          \"${n}\") theme=\"${t.opencode}\" ;;\n");
+  nvimCase = caseArms (n: t: "          \"${n}\") scheme=\"${t.nvim.dark}\"; [ \"$mode\" = light ] && scheme=\"${t.nvim.light}\" ;;\n");
 
   themeSync = pkgs.writeShellApplication {
     name = "noctalia-theme-sync";
@@ -81,29 +80,6 @@ let
         mv -f "$target.tmp" "$target"
       }
 
-      # theme of ~/.config/opencode/tui.json; custom files below for the
-      # palettes OpenCode has no builtin for.
-      sync_opencode() {
-        get_scheme || return 0
-        local theme="catppuccin" target
-        if [ "$source" = "builtin" ]; then
-          case "$name" in
-      ${opencodeCase}
-          esac
-        fi
-
-        target="$cfg/opencode/tui.json"
-        mkdir -p "$(dirname "$target")"
-        [ -f "$target" ] || printf '{}\n' >"$target"
-
-        if jq -e --arg t "$theme" '.theme == $t' "$target" >/dev/null 2>&1; then
-          return 0
-        fi
-
-        jq --arg t "$theme" '.theme = $t' "$target" >"$target.tmp"
-        mv -f "$target.tmp" "$target"
-      }
-
       # palette.conf for home/tmux.nix, parsed from the ghostty theme Noctalia
       # already writes (so community/custom palettes work too).
       sync_tmux() {
@@ -144,238 +120,39 @@ let
         tmux source-file "$out" >/dev/null 2>&1 || true
       }
 
-      case "''${1:-all}" in
-        zed) sync_zed ;;
-        opencode) sync_opencode ;;
-        tmux) sync_tmux ;;
-        all)
-          sync_zed || true
-          sync_opencode || true
-          sync_tmux || true
-          ;;
-        *)
-          echo "usage: $0 [zed|opencode|tmux]" >&2
-          exit 2
-          ;;
-      esac
+      # theme.lua for nvim/init.lua: same builtin name -> a hand-tuned
+      # colorscheme plugin (installed by vim.pack in nvim/init.lua).
+      sync_nvim() {
+        get_scheme || return 0
+        local scheme="catppuccin-mocha" out
+        [ "$mode" = "light" ] && scheme="catppuccin-latte"
+        if [ "$source" = "builtin" ]; then
+          case "$name" in
+      ${nvimCase}
+          esac
+        fi
+
+        out="''${XDG_STATE_HOME:-$HOME/.local/state}/nvim/theme.lua"
+        mkdir -p "$(dirname "$out")"
+        {
+          printf "vim.o.background = '%s'\n" "$mode"
+          printf "vim.cmd.colorscheme '%s'\n" "$scheme"
+        } >"$out.tmp"
+
+        # Unchanged -> no write; nvim reads this only at startup.
+        if cmp -s "$out.tmp" "$out" 2>/dev/null; then
+          rm -f "$out.tmp"
+          return 0
+        fi
+        mv -f "$out.tmp" "$out"
+      }
+
+      sync_zed || true
+      sync_tmux || true
+      sync_nvim || true
     '';
   };
   syncTheme = lib.getExe themeSync;
-
-  # Custom OpenCode themes for palettes without a builtin twin.
-  opencodeThemes = {
-    "noctalia-rose-pine.json" = {
-      "$schema" = "https://opencode.ai/theme.json";
-      "defs" = {
-        "base" = { "dark" = "#191724"; "light" = "#faf4ed"; };
-        "surface" = { "dark" = "#1f1d2e"; "light" = "#fffaf3"; };
-        "overlay" = { "dark" = "#26233a"; "light" = "#f2e9e1"; };
-        "muted" = { "dark" = "#6e6a86"; "light" = "#9893a5"; };
-        "subtle" = { "dark" = "#908caa"; "light" = "#797593"; };
-        "text" = { "dark" = "#e0def4"; "light" = "#575279"; };
-        "love" = { "dark" = "#eb6f92"; "light" = "#d7827e"; };
-        "gold" = { "dark" = "#f6c177"; "light" = "#ea9d34"; };
-        "rose" = { "dark" = "#ebbcba"; "light" = "#d7827e"; };
-        "pine" = { "dark" = "#31748f"; "light" = "#56949f"; };
-        "foam" = { "dark" = "#9ccfd8"; "light" = "#56949f"; };
-        "iris" = { "dark" = "#c4a7e7"; "light" = "#907aa9"; };
-        "highlight-low" = { "dark" = "#21202e"; "light" = "#f4ede8"; };
-        "highlight-med" = { "dark" = "#403d52"; "light" = "#dfdad9"; };
-        "highlight-high" = { "dark" = "#524f67"; "light" = "#cacacc"; };
-      };
-      "theme" = {
-        "primary" = "iris";
-        "secondary" = "foam";
-        "accent" = "rose";
-        "error" = "love";
-        "warning" = "gold";
-        "success" = "pine";
-        "info" = "foam";
-        "text" = "text";
-        "textMuted" = "muted";
-        "background" = "base";
-        "backgroundPanel" = "surface";
-        "backgroundElement" = "overlay";
-        "border" = "highlight-low";
-        "borderActive" = "highlight-med";
-        "borderSubtle" = "highlight-low";
-        "diffAdded" = "pine";
-        "diffRemoved" = "love";
-        "diffContext" = "muted";
-        "diffHunkHeader" = "muted";
-        "diffHighlightAdded" = "pine";
-        "diffHighlightRemoved" = "love";
-        "diffAddedBg" = "surface";
-        "diffRemovedBg" = "surface";
-        "diffContextBg" = "overlay";
-        "diffLineNumber" = "subtle";
-        "diffAddedLineNumberBg" = "surface";
-        "diffRemovedLineNumberBg" = "surface";
-        "markdownText" = "text";
-        "markdownHeading" = "iris";
-        "markdownLink" = "foam";
-        "markdownLinkText" = "rose";
-        "markdownCode" = "pine";
-        "markdownBlockQuote" = "muted";
-        "markdownEmph" = "gold";
-        "markdownStrong" = "love";
-        "markdownHorizontalRule" = "highlight-low";
-        "markdownListItem" = "iris";
-        "markdownListEnumeration" = "rose";
-        "markdownImage" = "foam";
-        "markdownImageText" = "rose";
-        "markdownCodeBlock" = "text";
-        "syntaxComment" = "muted";
-        "syntaxKeyword" = "iris";
-        "syntaxFunction" = "foam";
-        "syntaxVariable" = "rose";
-        "syntaxString" = "pine";
-        "syntaxNumber" = "gold";
-        "syntaxType" = "iris";
-        "syntaxOperator" = "subtle";
-        "syntaxPunctuation" = "text";
-      };
-    };
-    "noctalia-dracula.json" = {
-      "$schema" = "https://opencode.ai/theme.json";
-      "defs" = {
-        "bg" = { "dark" = "#282a36"; "light" = "#f8f8f2"; };
-        "current" = { "dark" = "#44475a"; "light" = "#6272a4"; };
-        "fg" = { "dark" = "#f8f8f2"; "light" = "#282a36"; };
-        "comment" = { "dark" = "#6272a4"; "light" = "#6272a4"; };
-        "cyan" = { "dark" = "#8be9fd"; "light" = "#0d8071"; };
-        "green" = { "dark" = "#50fa7b"; "light" = "#0d8071"; };
-        "orange" = { "dark" = "#ffb86c"; "light" = "#e05800"; };
-        "pink" = { "dark" = "#ff79c6"; "light" = "#c9184a"; };
-        "purple" = { "dark" = "#bd93f9"; "light" = "#6c3483"; };
-        "red" = { "dark" = "#ff5555"; "light" = "#c9184a"; };
-        "yellow" = { "dark" = "#f1fa8c"; "light" = "#c2952a"; };
-      };
-      "theme" = {
-        "primary" = "purple";
-        "secondary" = "cyan";
-        "accent" = "pink";
-        "error" = "red";
-        "warning" = "orange";
-        "success" = "green";
-        "info" = "cyan";
-        "text" = "fg";
-        "textMuted" = "comment";
-        "background" = "bg";
-        "backgroundPanel" = "current";
-        "backgroundElement" = "current";
-        "border" = "current";
-        "borderActive" = "purple";
-        "borderSubtle" = "current";
-        "diffAdded" = "green";
-        "diffRemoved" = "red";
-        "diffContext" = "comment";
-        "diffHunkHeader" = "comment";
-        "diffHighlightAdded" = "green";
-        "diffHighlightRemoved" = "red";
-        "diffAddedBg" = "current";
-        "diffRemovedBg" = "current";
-        "diffContextBg" = "current";
-        "diffLineNumber" = "comment";
-        "diffAddedLineNumberBg" = "current";
-        "diffRemovedLineNumberBg" = "current";
-        "markdownText" = "fg";
-        "markdownHeading" = "purple";
-        "markdownLink" = "cyan";
-        "markdownLinkText" = "pink";
-        "markdownCode" = "green";
-        "markdownBlockQuote" = "comment";
-        "markdownEmph" = "yellow";
-        "markdownStrong" = "red";
-        "markdownHorizontalRule" = "current";
-        "markdownListItem" = "purple";
-        "markdownListEnumeration" = "pink";
-        "markdownImage" = "cyan";
-        "markdownImageText" = "pink";
-        "markdownCodeBlock" = "fg";
-        "syntaxComment" = "comment";
-        "syntaxKeyword" = "purple";
-        "syntaxFunction" = "green";
-        "syntaxVariable" = "pink";
-        "syntaxString" = "green";
-        "syntaxNumber" = "purple";
-        "syntaxType" = "cyan";
-        "syntaxOperator" = "pink";
-        "syntaxPunctuation" = "fg";
-      };
-    };
-    "noctalia-eldritch.json" = {
-      "$schema" = "https://opencode.ai/theme.json";
-      "defs" = {
-        "bg" = { "dark" = "#0d0c1c"; "light" = "#fdf6e3"; };
-        "surface" = { "dark" = "#12111e"; "light" = "#f4f0d9"; };
-        "overlay" = { "dark" = "#1c1b30"; "light" = "#e8e4bc"; };
-        "muted" = { "dark" = "#56526e"; "light" = "#8c7e5a"; };
-        "subtle" = { "dark" = "#908aaf"; "light" = "#665c3c"; };
-        "text" = { "dark" = "#e0daf5"; "light" = "#1a1708"; };
-        "red" = { "dark" = "#ec6a88"; "light" = "#c9403c"; };
-        "orange" = { "dark" = "#f5a97f"; "light" = "#c26e17"; };
-        "yellow" = { "dark" = "#f4d799"; "light" = "#9c7c1f"; };
-        "green" = { "dark" = "#5ebe82"; "light" = "#2d8659"; };
-        "teal" = { "dark" = "#42be65"; "light" = "#1a7f4f"; };
-        "blue" = { "dark" = "#82e2ff"; "light" = "#205db4"; };
-        "purple" = { "dark" = "#d1afff"; "light" = "#8635c9"; };
-        "magenta" = { "dark" = "#f075d5"; "light" = "#b33086"; };
-      };
-      "theme" = {
-        "primary" = "purple";
-        "secondary" = "blue";
-        "accent" = "magenta";
-        "error" = "red";
-        "warning" = "orange";
-        "success" = "green";
-        "info" = "blue";
-        "text" = "text";
-        "textMuted" = "muted";
-        "background" = "bg";
-        "backgroundPanel" = "surface";
-        "backgroundElement" = "overlay";
-        "border" = "overlay";
-        "borderActive" = "purple";
-        "borderSubtle" = "overlay";
-        "diffAdded" = "green";
-        "diffRemoved" = "red";
-        "diffContext" = "muted";
-        "diffHunkHeader" = "muted";
-        "diffHighlightAdded" = "green";
-        "diffHighlightRemoved" = "red";
-        "diffAddedBg" = "surface";
-        "diffRemovedBg" = "surface";
-        "diffContextBg" = "overlay";
-        "diffLineNumber" = "subtle";
-        "diffAddedLineNumberBg" = "surface";
-        "diffRemovedLineNumberBg" = "surface";
-        "markdownText" = "text";
-        "markdownHeading" = "purple";
-        "markdownLink" = "blue";
-        "markdownLinkText" = "magenta";
-        "markdownCode" = "green";
-        "markdownBlockQuote" = "muted";
-        "markdownEmph" = "yellow";
-        "markdownStrong" = "red";
-        "markdownHorizontalRule" = "overlay";
-        "markdownListItem" = "purple";
-        "markdownListEnumeration" = "magenta";
-        "markdownImage" = "blue";
-        "markdownImageText" = "magenta";
-        "markdownCodeBlock" = "text";
-        "syntaxComment" = "muted";
-        "syntaxKeyword" = "purple";
-        "syntaxFunction" = "blue";
-        "syntaxVariable" = "magenta";
-        "syntaxString" = "green";
-        "syntaxNumber" = "yellow";
-        "syntaxType" = "cyan";
-        "syntaxOperator" = "subtle";
-        "syntaxPunctuation" = "text";
-      };
-    };
-  };
 
   # One material for the five islands; padding feeds the pills' 2px radius (8 - 6).
   mkGroup = id: members: {
@@ -562,8 +339,6 @@ in
             "qt"
             "starship"
           ];
-          # zed/opencode/tmux sync via the hooks above.
-          community_ids = [ ];
         };
       };
     };
@@ -574,10 +349,4 @@ in
   home.activation.themeSync = lib.hm.dag.entryAfter [ "zedSettingsActivation" ] ''
     run ${syncTheme} || true
   '';
-
-  xdg.configFile = lib.mapAttrs' (name: value:
-    lib.nameValuePair "opencode/themes/${name}" {
-      source = pkgs.writeText "${name}" (builtins.toJSON value);
-    }
-  ) opencodeThemes;
 }
