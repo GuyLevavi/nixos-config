@@ -11,6 +11,7 @@
     ./tmux.nix
     ./skills.nix
     ./zed.nix
+    ./neovim.nix
     ./apps.nix
     ./scripts.nix
   ];
