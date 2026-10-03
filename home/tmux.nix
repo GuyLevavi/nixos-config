@@ -96,5 +96,9 @@ in
     # From the same pinned revision as the package so the two never skew.
     "opencode/plugins/workmux-status.ts".source =
       "${inputs.workmux}/resources/opencode/plugins/workmux-status.ts";
+    # Re-export the pinned checkout so its relative hooks/skills resolve there;
+    # opencode loads every *.ts in this dir as a plugin.
+    "opencode/plugins/ponytail.ts".text =
+      ''export { default } from "${inputs.ponytail}/.opencode/plugins/ponytail.mjs";'';
   };
 }

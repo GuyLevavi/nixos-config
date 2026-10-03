@@ -35,6 +35,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # OpenCode ponytail plugin; no flake.nix upstream, vendored in home/tmux.nix.
+    ponytail = {
+      url = "github:DietrichGebert/ponytail";
+      flake = false;
+    };
+
   };
 
   outputs =
