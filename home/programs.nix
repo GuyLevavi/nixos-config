@@ -75,7 +75,6 @@ in
     mpv
     unzip
     jq
-    helix # zero-config terminal editor fallback
 
     # CLI (no home-manager module)
     fd
@@ -86,11 +85,7 @@ in
     lazydocker
 
     # dev
-    gcc
-    python3
     uv
-    nodejs
-    claude-code
     opencodeWithLsp # opencode + the shared language-server PATH
   ];
 }
