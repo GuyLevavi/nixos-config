@@ -62,6 +62,12 @@
       historyWidget.command = ""; # atuin owns Ctrl-R; fzf keeps Ctrl-T/Alt-C
     };
 
+    # nix-direnv caches `use flake`; fish hook auto-injected.
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
+
     git = {
       enable = true;
       settings = {
