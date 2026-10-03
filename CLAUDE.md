@@ -34,16 +34,22 @@ hosts/                          # per-machine settings; hardware-configuration.n
 modules/core.nix                # boot, nix settings, locale, user (bash login shell)
 modules/desktop.nix             # hyprland+uwsm, greetd, pipewire, fonts, podman, noctalia (system)
 modules/laptop.nix              # power, lid, bluetooth, touchpad, firmware — shared; both hosts are laptops
-home/default.nix                # ownership rule (Noctalia vs Nix), out-of-store symlinks for hypr/
-home/noctalia.nix               # the shell (user service) + zed/opencode/tmux palette sync
+home/default.nix                # ownership rule (Noctalia vs Nix), out-of-store symlinks for live files
+home/noctalia.nix               # the shell (user service) + zed/tmux/nvim palette sync
 home/shell.nix                  # bash->fish exec, starship/zoxide/atuin/fzf, git/delta/lazygit/gh
-home/tmux.nix                   # tmux (plugin-less, Noctalia palette) + workmux pkg/config
+home/tmux.nix                   # workmux pkg/config + opencode plugins; tmux.conf lives in tmux/
 home/lsp.nix                    # shared language-server list (zed + opencode PATH)
 home/zed.nix                    # Zed editor config
+home/neovim.nix                 # nvim package + shared LSP wiring; config lives in nvim/
 home/programs.nix               # terminal, core CLI, media tools
 home/apps.nix                   # obsidian + rclone Google Drive bisync, spotify
 home/scripts.nix                # rb / update / screen-record / monitor-watch
+home/skills.nix                 # vendored matt-skills set, symlinked into opencode
 hypr/                           # hyprland.conf + binds.conf — edited live, NOT in the nix store
+nvim/                           # init.lua (live) + nvim-pack-lock.json (vim.pack-generated, tracked)
+tmux/                           # tmux.conf — edited live (palette.conf stays runtime)
+opencode/                       # opencode.jsonc + tui.json — edited live
+skills/                         # hand-rolled agent skills, symlinked into opencode
 ```
 
 ## Critical Patterns
@@ -79,6 +85,12 @@ regenerates a stub over the live file. Two runtime-written sourced files are
 not in the repo: `~/.config/hypr/noctalia.conf` (theme colours) and
 `monitor-state.conf` (monitor-watch).
 
+The same out-of-store pattern covers `nvim/`, `tmux/tmux.conf`,
+`opencode/{opencode.jsonc,tui.json}` and `skills/` (`home/default.nix`);
+`~/.config/tmux/palette.conf` stays runtime-written. `programs.neovim` must
+keep `sideloadInitLua = true` or home-manager writes its own `init.lua` over
+the `nvim/` symlink.
+
 ### Theming: Noctalia owns it, not Nix
 
 Palette switches write GTK/Qt/ghostty/btop/starship/Firefox files at runtime.
@@ -88,10 +100,13 @@ seeds `config.toml`; the GUI's `~/.local/state/noctalia/settings.toml` overrides
 per-key. btop is split: theme file runtime-owned, `btop.conf` Nix-owned with
 `color_theme = "noctalia"` so the hook no-ops.
 
-Zed/opencode/tmux have no Noctalia template. One hook script
+Zed/tmux/nvim have no Noctalia template. One hook script
 (`noctalia-theme-sync`, `home/noctalia.nix`) rewrites the zed theme block,
-`tui.json` and `~/.config/tmux/palette.conf`; the theme-name map lives in one
-Nix table next to the script. A `home.activation` entry re-runs it after
+`~/.config/tmux/palette.conf` and `~/.local/state/nvim/theme.lua` (a hand-tuned
+colorscheme plugin per builtin theme; plugins installed by vim.pack in
+`nvim/init.lua`); the theme-name map lives in one Nix table next to the script.
+OpenCode uses its built-in `system` theme, which follows the terminal palette
+Noctalia writes. A `home.activation` entry re-runs it after
 `zedSettingsActivation`, because `rb` re-seeds the zed block from Nix and
 `started` doesn't fire on a live session. workmux's config and OpenCode status
 plugin are Nix-owned in `home/tmux.nix` from the pinned input.
@@ -105,14 +120,18 @@ interactive start unless the parent is fish (you typed it) or there is no tty
 command and worktrees lose their PATH). starship/zoxide/atuin/fzf use
 home-manager's `enableFishIntegration`.
 
-### Editors: Zed + OpenCode
+### Editors: Zed + Neovim + OpenCode
 
 `home/lsp.nix` is the single language-server list: zed gets it via
-`extraPackages`, opencode via a wrapped PATH (`home/programs.nix`). opencode's
-per-server config is the mutable `~/.config/opencode/opencode.jsonc`; zed's
-choosing (basedpyright over pyright, nixd over nil, ruff formatter) is in its
-`userSettings.languages`. Zed is the default editor (`zeditor -w`); helix stays
-as the terminal fallback. Panels dock right; `ctrl-b` toggles the right dock
+`extraPackages`, nvim via `programs.neovim.extraPackages` (`home/neovim.nix`),
+opencode via a wrapped PATH (`home/programs.nix`). opencode's per-server config
+is `opencode/opencode.jsonc` (repo-owned, symlinked live); zed's choosing
+(basedpyright over pyright, nixd over nil, ruff formatter) is in its
+`userSettings.languages`. Zed is the default editor (`zeditor -w`); nvim is the
+terminal fallback, its config is `nvim/init.lua` (repo-owned), and it enables
+the shared servers by lspconfig id. Zed's `zls` is guarded by
+`executable()` because it is project-scoped (the ziglings flake supplies it),
+not part of `home/lsp.nix`. Panels dock right; `ctrl-b` toggles the right dock
 (there is no left dock for stock `ToggleLeftDock` to open). Extensions are
 registry ids downloaded at runtime; removed ones are never uninstalled. With
 `mutableUserSettings = true` activation deep-merges Nix over the live settings
@@ -132,7 +151,6 @@ registry ids downloaded at runtime; removed ones are never uninstalled. With
 - `system.stateVersion` and `home.stateVersion` are `"25.05"` — **do not change**
 - Both hosts import `modules/laptop.nix` — both are laptops
 - `gpubox` uses PRIME **sync** (dGPU always on, no `nvidia-offload` wrapper)
-- `programs.claude-code` has no home-manager module — add via `home.packages`
 - Podman is enabled system-wide; activate per-session with
   `systemctl --user enable --now podman.socket`
 - `home/apps.nix`'s rclone sync needs a one-time manual `rclone config` (remote

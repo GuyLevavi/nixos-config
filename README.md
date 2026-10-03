@@ -18,8 +18,12 @@ hosts/<machine>/       host settings + generated hardware-configuration.nix
 modules/               core (boot/user), desktop (hyprland/greetd/pipewire),
                        laptop (power/lid/bluetooth/touchpad)
 home/                  home-manager modules: noctalia, shell, tmux, zed, lsp,
-                       programs, apps, scripts, skills
+                       neovim, programs, apps, scripts, skills
 hypr/                  hyprland.conf + binds.conf, edited live, NOT in the store
+nvim/                  init.lua, edited live, NOT in the store
+tmux/                  tmux.conf, edited live (palette.conf stays runtime)
+opencode/              opencode.jsonc + tui.json, edited live
+skills/                hand-rolled agent skills, symlinked into opencode
 ```
 
 ## Bootstrap
@@ -43,8 +47,11 @@ you do not edit at runtime. Rebuilds are idempotent.
 btop theme file, starship and the Firefox chrome at runtime. btop is split:
 Noctalia owns `~/.config/btop/themes/noctalia.theme`, while `btop.conf` is
 Nix-owned with `color_theme = "noctalia"` preset so that hook stays a no-op.
-Zed, tmux and OpenCode have no Noctalia template; hooks in `home/noctalia.nix`
-sync their theme files from the palette.
+Zed, tmux and Neovim have no Noctalia template; hooks in `home/noctalia.nix`
+sync their theme files from the palette. Zed and Neovim switch between real
+hand-tuned themes matching the builtin palette (Neovim via
+`~/.local/state/nvim/theme.lua`), tmux gets `palette.conf`. OpenCode uses its
+built-in `system` theme, which follows the terminal palette.
 
 Consequences:
 
@@ -56,11 +63,13 @@ Consequences:
   `rb` (Nix wins per key, GUI edits to those keys revert). Sign-in lives in
   gnome-keyring, not that file, so Nix ownership never signs you out.
 
-**You own** `hypr/`. It is symlinked out of the store from `/etc/nixos/hypr/`,
-so editing a keybind and running `hyprctl reload` is instant — no rebuild in the
-loop for the thing you change most often. (`~/.config/hypr/noctalia.conf` and
-`monitor-state.conf` are runtime-written by Noctalia and monitor-watch, and
-deliberately not in the repo.)
+**You own** `hypr/`, `nvim/`, `tmux/`, `opencode/` and `skills/`. They are
+symlinked out of the store from `/etc/nixos/`, so edits need no rebuild:
+`hyprctl reload` for Hyprland, `:source $MYVIMRC` for Neovim, `prefix R` for
+tmux; opencode reads its config at start. Runtime-written siblings stay out of
+the repo: `~/.config/hypr/noctalia.conf`, `monitor-state.conf`, and
+`~/.config/tmux/palette.conf`. Neovim also carries a `nvim-pack-lock.json`:
+`vim.pack` rewrites it on updates, and it is tracked on purpose.
 
 ## Things that will bite you
 
