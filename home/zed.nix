@@ -35,6 +35,9 @@ in
         metrics = false;
         diagnostics = false;
       };
+      # AI autocomplete off; "none" also hides the status-bar Z icon.
+      edit_predictions.provider = "none";
+      autosave = "on_focus_change";
       format_on_save = "on";
       # Seed only — the hook in home/noctalia.nix rewrites this block.
       theme = {
