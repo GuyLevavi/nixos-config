@@ -86,6 +86,7 @@ in
 
     # dev
     uv
+    claude-code # LSP stays plugin-per-language at runtime; no PATH wrapper
     opencodeWithLsp # opencode + the shared language-server PATH
   ];
 }
