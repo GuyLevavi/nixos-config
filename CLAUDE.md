@@ -35,7 +35,7 @@ modules/core.nix                # boot, nix settings, locale, user (bash login s
 modules/desktop.nix             # hyprland+uwsm, greetd, pipewire, fonts, podman, noctalia (system)
 modules/laptop.nix              # power, lid, bluetooth, touchpad, firmware — shared; both hosts are laptops
 home/default.nix                # ownership rule (Noctalia vs Nix), out-of-store symlinks for live files
-home/noctalia.nix               # the shell (user service) + zed/tmux/nvim palette sync
+home/noctalia.nix               # the shell (user service) + zed/tmux/nvim/opencode palette sync
 home/shell.nix                  # bash->fish exec, starship/zoxide/atuin/fzf, git/delta/lazygit/gh
 home/tmux.nix                   # workmux pkg/config + opencode plugins; tmux.conf lives in tmux/
 home/lsp.nix                    # shared language-server list (zed + opencode PATH)
@@ -100,13 +100,17 @@ seeds `config.toml`; the GUI's `~/.local/state/noctalia/settings.toml` overrides
 per-key. btop is split: theme file runtime-owned, `btop.conf` Nix-owned with
 `color_theme = "noctalia"` so the hook no-ops.
 
-Zed/tmux/nvim have no Noctalia template. One hook script
+Zed/tmux/nvim/opencode have no Noctalia template. One hook script
 (`noctalia-theme-sync`, `home/noctalia.nix`) rewrites the zed theme block,
-`~/.config/tmux/palette.conf` and `~/.local/state/nvim/theme.lua` (a hand-tuned
-colorscheme plugin per builtin theme; plugins installed by vim.pack in
-`nvim/init.lua`); the theme-name map lives in one Nix table next to the script.
-OpenCode uses its built-in `system` theme, which follows the terminal palette
-Noctalia writes. A `home.activation` entry re-runs it after
+`~/.config/tmux/palette.conf` (accent from Noctalia's `$primary` — ghostty's
+ANSI slot 4 is blue in most palettes), `~/.local/state/nvim/theme.lua` (a
+hand-tuned colorscheme plugin per builtin theme, plus a statusline background
+on palette slot 0 to match tmux; plugins installed by vim.pack in
+`nvim/init.lua`) and the opencode theme: a palette-derived custom theme
+`~/.config/opencode/themes/noctalia.json` selected via the `theme` key of
+`~/.local/state/opencode/kv.json` (`tui.json` must stay theme-less or it would
+win). The zed/nvim theme-name map lives in one Nix table next to the script. A
+`home.activation` entry re-runs it after
 `zedSettingsActivation`, because `rb` re-seeds the zed block from Nix and
 `started` doesn't fire on a live session. workmux's config and OpenCode status
 plugin are Nix-owned in `home/tmux.nix` from the pinned input.

@@ -47,11 +47,13 @@ you do not edit at runtime. Rebuilds are idempotent.
 btop theme file, starship and the Firefox chrome at runtime. btop is split:
 Noctalia owns `~/.config/btop/themes/noctalia.theme`, while `btop.conf` is
 Nix-owned with `color_theme = "noctalia"` preset so that hook stays a no-op.
-Zed, tmux and Neovim have no Noctalia template; hooks in `home/noctalia.nix`
-sync their theme files from the palette. Zed and Neovim switch between real
-hand-tuned themes matching the builtin palette (Neovim via
-`~/.local/state/nvim/theme.lua`), tmux gets `palette.conf`. OpenCode uses its
-built-in `system` theme, which follows the terminal palette.
+Zed, tmux, Neovim and OpenCode have no Noctalia template; hooks in
+`home/noctalia.nix` sync their theme from the palette. Zed and Neovim switch
+between real hand-tuned themes matching the builtin palette (Neovim via
+`~/.local/state/nvim/theme.lua`, statusline included), tmux gets `palette.conf`
+with Noctalia's `$primary` as accent, OpenCode gets a palette-derived custom
+theme (`~/.config/opencode/themes/noctalia.json`, selected in
+`~/.local/state/opencode/kv.json`).
 
 Consequences:
 
@@ -88,9 +90,9 @@ the repo: `~/.config/hypr/noctalia.conf`, `monitor-state.conf`, and
 - **Firefox theming** needs
   `toolkit.legacyUserProfileCustomizations.stylesheets = true` in `about:config`
   before the userChrome colours apply. It fails silently otherwise.
-- **Noctalia is pinned to a tag** in `flake.nix` on purpose — an update can
-  rename an IPC verb and break a `hypr/binds.conf` line. Bump it deliberately
-  (`nix flake lock --update-input noctalia`).
+- **Noctalia follows nixpkgs** (package, NixOS + home-manager modules). A
+  nixpkgs bump can rename a config key or an IPC verb; config keys fail the
+  build (`checkConfig`), a `hypr/binds.conf` verb only fails at runtime.
 - **gpubox uses PRIME sync, not offload.** The dGPU is always rendering — you
   trade battery for sustained gaming performance.
 

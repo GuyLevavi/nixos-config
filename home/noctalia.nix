@@ -1,5 +1,4 @@
 {
-  inputs,
   pkgs,
   lib,
   config,
@@ -7,11 +6,12 @@
   ...
 }:
 let
-  # Noctalia has no theme template for zed/tmux/nvim, so one hook script
-  # rewrites each consumer's theme file. Theme names live in one table so the
-  # arms cannot drift from the palette Noctalia reports.
+  # Noctalia has no theme template for zed/tmux/nvim/opencode, so one hook
+  # script rewrites each consumer's theme. Builtin names live in one table so
+  # the arms cannot drift from the palette Noctalia reports; opencode gets a
+  # theme generated from that palette instead (no builtin tracks it).
   builtinThemes = {
-    "Ayu" = { dark = "Ayu Dark"; light = "Ayu Light"; nvim = { dark = "ayu-mirage"; light = "ayu-light"; }; };
+    "Ayu" = { dark = "Ayu Dark"; light = "Ayu Light"; nvim = { dark = "ayu-dark"; light = "ayu-light"; }; };
     "Catppuccin" = { dark = "Catppuccin Mocha"; light = "Catppuccin Latte"; nvim = { dark = "catppuccin-mocha"; light = "catppuccin-latte"; }; };
     "Dracula" = { dark = "Dracula"; light = "Dracula Light (Alucard)"; nvim = { dark = "dracula"; light = "dracula"; }; };
     "Eldritch" = { dark = "Eldritch"; light = "Eldritch Dusk"; nvim = { dark = "eldritch"; light = "eldritch"; }; };
@@ -80,31 +80,44 @@ let
         mv -f "$target.tmp" "$target"
       }
 
-      # palette.conf for home/tmux.nix, parsed from the ghostty theme Noctalia
-      # already writes (so community/custom palettes work too).
-      sync_tmux() {
-        local theme_file="$cfg/ghostty/themes/noctalia" out
-        [ -f "$theme_file" ] || return 0
+      # Palette slots filled by get_palette below.
+      p0="" p1="" p2="" p3="" p4="" p5="" p6="" p7="" p8="" p9="" p10="" p12="" bg="" fg="" primary=""
 
-        local p0="" p4="" p5="" p7="" p8=""
+      # Palette from the ghostty theme Noctalia writes (community/custom
+      # palettes work too) plus $primary from the hyprland theme: ANSI slot 4
+      # is blue in most palettes, but the accent Noctalia uses is $primary.
+      get_palette() {
+        local theme_file="$cfg/ghostty/themes/noctalia"
+        [ -f "$theme_file" ] || return 1
+
         eval "$(awk -F= '
           /^palette = / { gsub(/[[:space:]]/, "", $2); gsub(/[[:space:]]/, "", $3); print "p" $2 "=" $3 }
+          /^background = / { gsub(/[[:space:]]/, "", $2); print "bg=" $2 }
+          /^foreground = / { gsub(/[[:space:]]/, "", $2); print "fg=" $2 }
         ' "$theme_file")"
-        [ -n "$p4" ] || return 0
+        [ -n "$p4" ] || return 1
 
-        out="$cfg/tmux/palette.conf"
+        primary="$(awk -F'[()]' '/^\$primary *= *rgb/{print "#" $2}' "$cfg/hypr/noctalia.conf" 2>/dev/null || true)"
+        [ -n "$primary" ] || primary="$p4"
+      }
+
+      # palette.conf for home/tmux.nix, sourced live by tmux/tmux.conf.
+      sync_tmux() {
+        get_palette || return 0
+
+        local out="$cfg/tmux/palette.conf"
         mkdir -p "$(dirname "$out")"
         {
           printf 'set -g status-style "bg=%s,fg=%s"\n' "$p0" "$p7"
-          printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$p4" "$p0" "$p0" "$p4"
-          printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$p4"
+          printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$primary" "$p0" "$p0" "$primary"
+          printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$primary"
           printf 'setw -g window-status-style "fg=%s,bg=%s"\n' "$p8" "$p0"
-          printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$p4"
+          printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$primary"
           printf 'set -g message-style "bg=%s,fg=%s"\n' "$p8" "$p7"
-          printf 'set -g mode-style "bg=%s,fg=%s"\n' "$p4" "$p0"
+          printf 'set -g mode-style "bg=%s,fg=%s"\n' "$primary" "$p0"
           printf 'setw -g clock-mode-colour "%s"\n' "$p5"
           printf 'set -g pane-border-style "fg=%s"\n' "$p8"
-          printf 'set -g pane-active-border-style "fg=%s"\n' "$p4"
+          printf 'set -g pane-active-border-style "fg=%s"\n' "$primary"
           printf 'set -g popup-style "bg=%s,fg=%s"\n' "$p0" "$p7"
           printf 'set -g popup-border-style "fg=%s"\n' "$p8"
         } >"$out.tmp"
@@ -132,11 +145,23 @@ let
           esac
         fi
 
+        # Statusline sits on the palette's slot 0, like tmux's bar.
+        local sl_bg="" sl_fg="" sl_muted=""
+        if get_palette; then
+          sl_bg="$p0"
+          sl_fg="$p7"
+          sl_muted="$p8"
+        fi
+
         out="''${XDG_STATE_HOME:-$HOME/.local/state}/nvim/theme.lua"
         mkdir -p "$(dirname "$out")"
         {
           printf "vim.o.background = '%s'\n" "$mode"
           printf "vim.cmd.colorscheme '%s'\n" "$scheme"
+          if [ -n "$sl_bg" ]; then
+            printf "vim.api.nvim_set_hl(0, 'StatusLine', { bg = '%s', fg = '%s' })\n" "$sl_bg" "$sl_fg"
+            printf "vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = '%s', fg = '%s' })\n" "$sl_bg" "$sl_muted"
+          fi
         } >"$out.tmp"
 
         # Unchanged -> no write; nvim reads this only at startup.
@@ -147,9 +172,85 @@ let
         mv -f "$out.tmp" "$out"
       }
 
+      # opencode's builtin themes only approximate the palette (Ayu's primary
+      # is blue), so generate a custom theme from it and select it via
+      # opencode's kv store; tui.json must stay theme-less or it would win.
+      sync_opencode() {
+        get_palette || return 0
+
+        local out="$cfg/opencode/themes/noctalia.json"
+        mkdir -p "$(dirname "$out")"
+        jq -n \
+          --arg primary "$primary" --arg p0 "$p0" \
+          --arg p1 "$p1" --arg p2 "$p2" --arg p3 "$p3" --arg p4 "$p4" \
+          --arg p5 "$p5" --arg p6 "$p6" --arg p7 "$p7" --arg p8 "$p8" \
+          --arg p9 "$p9" --arg p10 "$p10" --arg p12 "$p12" \
+          --arg bg "$bg" --arg fg "$fg" \
+          '{
+            "$schema": "https://opencode.ai/theme.json",
+            theme: {
+              primary: $primary,
+              secondary: $p5,
+              accent: $p3,
+              error: $p1,
+              warning: $p3,
+              success: $p2,
+              info: $p6,
+              text: $fg,
+              textMuted: $p8,
+              background: $bg,
+              backgroundPanel: $p0,
+              backgroundElement: $p0,
+              border: $p8,
+              borderActive: $primary,
+              selectedListItemText: $bg,
+              diffAdded: $p2,
+              diffRemoved: $p1,
+              diffHighlightAdded: $p10,
+              diffHighlightRemoved: $p9,
+              syntaxComment: $p8,
+              syntaxKeyword: $p3,
+              syntaxFunction: $p4,
+              syntaxVariable: $p7,
+              syntaxString: $p2,
+              syntaxNumber: $p3,
+              syntaxType: $p12,
+              markdownText: $fg,
+              markdownHeading: $p4,
+              markdownLink: $p6,
+              markdownLinkText: $p6,
+              markdownCode: $p2,
+              markdownBlockQuote: $p8,
+              markdownEmph: $p3,
+              markdownStrong: $p3,
+              markdownHorizontalRule: $p8,
+              markdownListItem: $p4,
+              markdownListEnumeration: $p4,
+              markdownImage: $p6,
+              markdownImageText: $p6,
+              markdownCodeBlock: $p2
+            }
+          }' >"$out.tmp"
+        if cmp -s "$out.tmp" "$out" 2>/dev/null; then
+          rm -f "$out.tmp"
+        else
+          mv -f "$out.tmp" "$out"
+        fi
+
+        out="''${XDG_STATE_HOME:-$HOME/.local/state}/opencode/kv.json"
+        mkdir -p "$(dirname "$out")"
+        [ -f "$out" ] || printf '{}\n' >"$out"
+        if jq -e '.theme == "noctalia"' "$out" >/dev/null 2>&1; then
+          return 0
+        fi
+        jq '.theme = "noctalia"' "$out" >"$out.tmp"
+        mv -f "$out.tmp" "$out"
+      }
+
       sync_zed || true
       sync_tmux || true
       sync_nvim || true
+      sync_opencode || true
     '';
   };
   syncTheme = lib.getExe themeSync;
@@ -171,8 +272,6 @@ let
   gpuMembers = [ "gpu" "gpuvram" "gputemp" ];
 in
 {
-  imports = [ inputs.noctalia.homeModules.default ];
-
   programs.noctalia = {
     enable = true;
     systemd.enable = true; # user service, bound to graphical-session.target

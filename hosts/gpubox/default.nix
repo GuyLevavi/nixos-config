@@ -2,6 +2,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./mouse.nix
     ./nvidia.nix
     ../../modules/core.nix
     ../../modules/desktop.nix

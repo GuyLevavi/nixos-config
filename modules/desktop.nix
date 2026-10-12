@@ -1,6 +1,5 @@
 {
   pkgs,
-  inputs,
   ...
 }:
 let
@@ -14,8 +13,6 @@ let
   };
 in
 {
-  imports = [ inputs.noctalia.nixosModules.default ];
-
   # Pulls in the wayland session desktop file, portals, xwayland, polkit and
   # hardware.graphics; UWSM gives graphical-session.target, which the Noctalia
   # user service needs.
