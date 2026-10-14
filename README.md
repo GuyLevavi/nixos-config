@@ -20,7 +20,7 @@ modules/               core (boot/user), desktop (hyprland/greetd/pipewire),
 home/                  home-manager modules: noctalia, shell, tmux, zed, lsp,
                        neovim, programs, apps, scripts, skills
 hypr/                  hyprland.conf + binds.conf, edited live, NOT in the store
-nvim/                  init.lua, edited live, NOT in the store
+nvim/                  LazyVim lua/config + lua/plugins, edited live
 tmux/                  tmux.conf, edited live (palette.conf stays runtime)
 opencode/              opencode.jsonc + tui.json, edited live
 skills/                hand-rolled agent skills, symlinked into opencode
@@ -50,7 +50,7 @@ Nix-owned with `color_theme = "noctalia"` preset so that hook stays a no-op.
 Zed, tmux, Neovim and OpenCode have no Noctalia template; hooks in
 `home/noctalia.nix` sync their theme from the palette. Zed and Neovim switch
 between real hand-tuned themes matching the builtin palette (Neovim via
-`~/.local/state/nvim/theme.lua`, statusline included), tmux gets `palette.conf`
+`~/.local/state/nvim/theme.lua`), tmux gets `palette.conf`
 with Noctalia's `$primary` as accent, OpenCode gets a palette-derived custom
 theme (`~/.config/opencode/themes/noctalia.json`, selected in
 `~/.local/state/opencode/kv.json`).
@@ -67,11 +67,12 @@ Consequences:
 
 **You own** `hypr/`, `nvim/`, `tmux/`, `opencode/` and `skills/`. They are
 symlinked out of the store from `/etc/nixos/`, so edits need no rebuild:
-`hyprctl reload` for Hyprland, `:source $MYVIMRC` for Neovim, `prefix R` for
-tmux; opencode reads its config at start. Runtime-written siblings stay out of
-the repo: `~/.config/hypr/noctalia.conf`, `monitor-state.conf`, and
-`~/.config/tmux/palette.conf`. Neovim also carries a `nvim-pack-lock.json`:
-`vim.pack` rewrites it on updates, and it is tracked on purpose.
+`hyprctl reload` for Hyprland, `prefix R` for tmux; Neovim and opencode read
+theirs at start. Runtime-written siblings stay out of the repo:
+`~/.config/hypr/noctalia.conf`, `monitor-state.conf`, and
+`~/.config/tmux/palette.conf`. Neovim's plugins are the exception: LazyVim
+resolves every plugin from nixpkgs (`home/neovim.nix`) and never clones, so a
+new plugin is a Nix change.
 
 ## Things that will bite you
 

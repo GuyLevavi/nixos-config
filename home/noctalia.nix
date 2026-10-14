@@ -133,8 +133,8 @@ let
         tmux source-file "$out" >/dev/null 2>&1 || true
       }
 
-      # theme.lua for nvim/init.lua: same builtin name -> a hand-tuned
-      # colorscheme plugin (installed by vim.pack in nvim/init.lua).
+      # theme.lua for nvim/lua/plugins/theme.lua: same builtin name -> a
+      # hand-tuned colorscheme plugin (from nixpkgs in home/neovim.nix).
       sync_nvim() {
         get_scheme || return 0
         local scheme="catppuccin-mocha" out
@@ -145,23 +145,11 @@ let
           esac
         fi
 
-        # Statusline sits on the palette's slot 0, like tmux's bar.
-        local sl_bg="" sl_fg="" sl_muted=""
-        if get_palette; then
-          sl_bg="$p0"
-          sl_fg="$p7"
-          sl_muted="$p8"
-        fi
-
         out="''${XDG_STATE_HOME:-$HOME/.local/state}/nvim/theme.lua"
         mkdir -p "$(dirname "$out")"
         {
           printf "vim.o.background = '%s'\n" "$mode"
           printf "vim.cmd.colorscheme '%s'\n" "$scheme"
-          if [ -n "$sl_bg" ]; then
-            printf "vim.api.nvim_set_hl(0, 'StatusLine', { bg = '%s', fg = '%s' })\n" "$sl_bg" "$sl_fg"
-            printf "vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = '%s', fg = '%s' })\n" "$sl_bg" "$sl_muted"
-          fi
         } >"$out.tmp"
 
         # Unchanged -> no write; nvim reads this only at startup.

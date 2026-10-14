@@ -40,13 +40,13 @@ home/shell.nix                  # bash->fish exec, starship/zoxide/atuin/fzf, gi
 home/tmux.nix                   # workmux pkg/config, opencode plugins, claude hooks; tmux.conf in tmux/
 home/lsp.nix                    # shared language-server list (zed + opencode PATH)
 home/zed.nix                    # Zed editor config
-home/neovim.nix                 # nvim package + shared LSP wiring; config lives in nvim/
+home/neovim.nix                 # LazyVim bootstrap + nixpkgs plugin set + grammars; user config in nvim/
 home/programs.nix               # terminal, core CLI, media tools
 home/apps.nix                   # obsidian + rclone Google Drive bisync, spotify
 home/scripts.nix                # rb / update / screen-record / monitor-watch
 home/skills.nix                 # vendored matt-skills set, symlinked into opencode
 hypr/                           # hyprland.conf + binds.conf — edited live, NOT in the nix store
-nvim/                           # init.lua (live) + nvim-pack-lock.json (vim.pack-generated, tracked)
+nvim/                           # LazyVim lua/config + lua/plugins (live); no init.lua
 tmux/                           # tmux.conf — edited live (palette.conf stays runtime)
 opencode/                       # opencode.jsonc + tui.json — edited live
 skills/                         # hand-rolled agent skills, symlinked into opencode
@@ -104,9 +104,8 @@ Zed/tmux/nvim/opencode have no Noctalia template. One hook script
 (`noctalia-theme-sync`, `home/noctalia.nix`) rewrites the zed theme block,
 `~/.config/tmux/palette.conf` (accent from Noctalia's `$primary` — ghostty's
 ANSI slot 4 is blue in most palettes), `~/.local/state/nvim/theme.lua` (a
-hand-tuned colorscheme plugin per builtin theme, plus a statusline background
-on palette slot 0 to match tmux; plugins installed by vim.pack in
-`nvim/init.lua`) and the opencode theme: a palette-derived custom theme
+hand-tuned colorscheme plugin per builtin theme, from nixpkgs in
+`home/neovim.nix`) and the opencode theme: a palette-derived custom theme
 `~/.config/opencode/themes/noctalia.json` selected via the `theme` key of
 `~/.local/state/opencode/kv.json` (`tui.json` must stay theme-less or it would
 win). The zed/nvim theme-name map lives in one Nix table next to the script. A
@@ -134,10 +133,11 @@ opencode via a wrapped PATH (`home/programs.nix`). opencode's per-server config
 is `opencode/opencode.jsonc` (repo-owned, symlinked live); zed's choosing
 (basedpyright over pyright, nixd over nil, ruff formatter) is in its
 `userSettings.languages`. Zed is the default editor (`zeditor -w`); nvim is the
-terminal fallback, its config is `nvim/init.lua` (repo-owned), and it enables
-the shared servers by lspconfig id. Zed's `zls` is guarded by
-`executable()` because it is project-scoped (the ziglings flake supplies it),
-not part of `home/lsp.nix`. Panels dock right; `ctrl-b` toggles the right dock
+terminal fallback: LazyVim with every plugin from nixpkgs (`home/neovim.nix`,
+Mason off, nothing cloned) and user config in `nvim/lua/`. Its wrapper appends
+`home/lsp.nix` to PATH, so a dev shell's zls/rust-analyzer win. Zed's `zls` is
+guarded by `executable()` because it is project-scoped (the ziglings flake
+supplies it), not part of `home/lsp.nix`. Panels dock right; `ctrl-b` toggles the right dock
 (there is no left dock for stock `ToggleLeftDock` to open). Extensions are
 registry ids downloaded at runtime; removed ones are never uninstalled. With
 `mutableUserSettings = true` activation deep-merges Nix over the live settings
