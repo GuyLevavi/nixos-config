@@ -1,10 +1,22 @@
 {
   inputs,
+  lib,
   pkgs,
   ...
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
+
+  # Claude rewrites settings.json at runtime, so it can't be a store symlink: swap
+  # only the workmux-owned hooks for the pinned set, leaving every other key alone.
+  claudeHooksMerge = pkgs.writeText "workmux-claude-hooks.jq" ''
+    def ours: (.command // "") | test("workmux (set-window-status|register-agent)");
+    .hooks = reduce ($plugin[0].hooks | to_entries[]) as $e (
+      (.hooks // {})
+      | map_values(map(.hooks |= map(select(ours | not))) | map(select(.hooks != [])))
+      | with_entries(select(.value != []));
+      .[$e.key] += $e.value)
+  '';
 in
 {
   home.packages = [
@@ -30,4 +42,15 @@ in
     "opencode/plugins/ponytail.ts".text =
       ''export { default } from "${inputs.ponytail}/.opencode/plugins/ponytail.mjs";'';
   };
+
+  home.activation.workmuxClaudeHooks = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings="$HOME/.claude/settings.json"
+    [ -f "$settings" ] || { mkdir -p "$HOME/.claude"; echo "{}" >"$settings"; }
+    if ${pkgs.jq}/bin/jq --slurpfile plugin ${inputs.workmux}/.claude-plugin/plugin.json \
+        -f ${claudeHooksMerge} "$settings" >"$settings.tmp"; then
+      if cmp -s "$settings" "$settings.tmp"; then rm "$settings.tmp"; else run mv "$settings.tmp" "$settings"; fi
+    else
+      rm -f "$settings.tmp"; warnEcho "workmux: $settings is not valid JSON, hooks not installed"
+    fi
+  '';
 }

@@ -37,7 +37,7 @@ modules/laptop.nix              # power, lid, bluetooth, touchpad, firmware — 
 home/default.nix                # ownership rule (Noctalia vs Nix), out-of-store symlinks for live files
 home/noctalia.nix               # the shell (user service) + zed/tmux/nvim/opencode palette sync
 home/shell.nix                  # bash->fish exec, starship/zoxide/atuin/fzf, git/delta/lazygit/gh
-home/tmux.nix                   # workmux pkg/config + opencode plugins; tmux.conf lives in tmux/
+home/tmux.nix                   # workmux pkg/config, opencode plugins, claude hooks; tmux.conf in tmux/
 home/lsp.nix                    # shared language-server list (zed + opencode PATH)
 home/zed.nix                    # Zed editor config
 home/neovim.nix                 # nvim package + shared LSP wiring; config lives in nvim/
@@ -112,8 +112,10 @@ on palette slot 0 to match tmux; plugins installed by vim.pack in
 win). The zed/nvim theme-name map lives in one Nix table next to the script. A
 `home.activation` entry re-runs it after
 `zedSettingsActivation`, because `rb` re-seeds the zed block from Nix and
-`started` doesn't fire on a live session. workmux's config and OpenCode status
-plugin are Nix-owned in `home/tmux.nix` from the pinned input.
+`started` doesn't fire on a live session. workmux's config, OpenCode status
+plugin and Claude status hooks are Nix-owned in `home/tmux.nix` from the pinned
+input. Claude writes `~/.claude/settings.json` at runtime, so an activation step
+merges the hooks in, replacing only `workmux …` hook entries.
 
 ### Shell: bash (login) + fish (interactive)
 
