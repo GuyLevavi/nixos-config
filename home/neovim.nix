@@ -39,6 +39,7 @@ let
     nvim-ts-autotag
     persistence-nvim
     plenary-nvim
+    render-markdown-nvim
     snacks-nvim
     todo-comments-nvim
     tokyonight-nvim
@@ -126,6 +127,9 @@ in
       pkgs.shfmt
       pkgs.nixfmt
       pkgs.statix
+      # snacks.image: non-PNG conversion and LaTeX math
+      pkgs.imagemagick
+      pkgs.tectonic
     ];
   };
 

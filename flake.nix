@@ -9,22 +9,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Vendored into the store by home/skills.nix; no flake.nix upstream.
-    matt-skills = {
-      url = "github:mattpocock/skills";
-      flake = false;
-    };
-
     # Package, global config and OpenCode plugin come from here (home/tmux.nix).
     workmux = {
       url = "github:raine/workmux";
       inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # OpenCode ponytail plugin; no flake.nix upstream, vendored in home/tmux.nix.
-    ponytail = {
-      url = "github:DietrichGebert/ponytail";
-      flake = false;
     };
 
   };

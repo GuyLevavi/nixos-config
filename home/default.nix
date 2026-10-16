@@ -30,7 +30,6 @@ in
     ./programs.nix
     ./shell.nix
     ./tmux.nix
-    ./skills.nix
     ./zed.nix
     ./neovim.nix
     ./apps.nix

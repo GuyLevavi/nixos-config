@@ -36,6 +36,7 @@ let
       pkgs.jq
       pkgs.gawk
       pkgs.tmux
+      config.programs.neovim.finalPackage
       config.programs.noctalia.package
     ];
     text = ''
@@ -105,19 +106,30 @@ let
       sync_tmux() {
         get_palette || return 0
 
+        # Accent = lualine's normal-mode colours for the scheme sync_nvim just
+        # wrote; $primary only for non-builtin palettes or if nvim fails.
+        local accent="$primary" on_accent="$p0" pair
+        if get_scheme && [ "$source" = "builtin" ] &&
+          pair="$(timeout 10 nvim --headless \
+            +'lua local a = require("lualine.utils.loader").load_theme("auto").normal.a; io.stdout:write(a.bg .. " " .. a.fg)' \
+            +'qa!' 2>/dev/null)" &&
+          [[ "$pair" =~ ^#[0-9A-Fa-f]{6}\ #[0-9A-Fa-f]{6}$ ]]; then
+          read -r accent on_accent <<<"$pair"
+        fi
+
         local out="$cfg/tmux/palette.conf"
         mkdir -p "$(dirname "$out")"
         {
           printf 'set -g status-style "bg=%s,fg=%s"\n' "$p0" "$p7"
-          printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$primary" "$p0" "$p0" "$primary"
-          printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$primary"
+          printf 'set -g status-left "#[bg=%s,fg=%s,bold] #S #[bg=%s,fg=%s,nobold]"\n' "$accent" "$on_accent" "$p0" "$accent"
+          printf 'set -g status-right "#[fg=%s]#h #[fg=%s]%%H:%%M "\n' "$p8" "$accent"
           printf 'setw -g window-status-style "fg=%s,bg=%s"\n' "$p8" "$p0"
-          printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$p0" "$primary"
+          printf 'setw -g window-status-current-style "fg=%s,bg=%s,bold"\n' "$on_accent" "$accent"
           printf 'set -g message-style "bg=%s,fg=%s"\n' "$p8" "$p7"
-          printf 'set -g mode-style "bg=%s,fg=%s"\n' "$primary" "$p0"
+          printf 'set -g mode-style "bg=%s,fg=%s"\n' "$accent" "$on_accent"
           printf 'setw -g clock-mode-colour "%s"\n' "$p5"
           printf 'set -g pane-border-style "fg=%s"\n' "$p8"
-          printf 'set -g pane-active-border-style "fg=%s"\n' "$primary"
+          printf 'set -g pane-active-border-style "fg=%s"\n' "$accent"
           printf 'set -g popup-style "bg=%s,fg=%s"\n' "$p0" "$p7"
           printf 'set -g popup-border-style "fg=%s"\n' "$p8"
         } >"$out.tmp"
@@ -236,8 +248,8 @@ let
       }
 
       sync_zed || true
-      sync_tmux || true
       sync_nvim || true
+      sync_tmux || true
       sync_opencode || true
     '';
   };

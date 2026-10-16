@@ -44,7 +44,6 @@ home/neovim.nix                 # LazyVim bootstrap + nixpkgs plugin set + gramm
 home/programs.nix               # terminal, core CLI, media tools
 home/apps.nix                   # obsidian + rclone Google Drive bisync, spotify
 home/scripts.nix                # rb / update / screen-record / monitor-watch
-home/skills.nix                 # vendored matt-skills set, symlinked into opencode
 hypr/                           # hyprland.conf + binds.conf — edited live, NOT in the nix store
 nvim/                           # LazyVim lua/config + lua/plugins (live); no init.lua
 tmux/                           # tmux.conf — edited live (palette.conf stays runtime)
@@ -102,8 +101,9 @@ per-key. btop is split: theme file runtime-owned, `btop.conf` Nix-owned with
 
 Zed/tmux/nvim/opencode have no Noctalia template. One hook script
 (`noctalia-theme-sync`, `home/noctalia.nix`) rewrites the zed theme block,
-`~/.config/tmux/palette.conf` (accent from Noctalia's `$primary` — ghostty's
-ANSI slot 4 is blue in most palettes), `~/.local/state/nvim/theme.lua` (a
+`~/.config/tmux/palette.conf` (accent read from nvim's lualine normal mode via
+headless nvim, so `sync_nvim` runs first; Noctalia's `$primary` for
+non-builtin palettes), `~/.local/state/nvim/theme.lua` (a
 hand-tuned colorscheme plugin per builtin theme, from nixpkgs in
 `home/neovim.nix`) and the opencode theme: a palette-derived custom theme
 `~/.config/opencode/themes/noctalia.json` selected via the `theme` key of

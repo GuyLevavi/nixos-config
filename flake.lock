@@ -20,22 +20,6 @@
         "type": "github"
       }
     },
-    "matt-skills": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791543409,
-        "narHash": "sha256-NljCSZNI3sZ+vbCw7pRdrwR7try4BxOFp4gdjuWYtzs=",
-        "owner": "mattpocock",
-        "repo": "skills",
-        "rev": "49dd158d1076134a641b33efb035946536778336",
-        "type": "github"
-      },
-      "original": {
-        "owner": "mattpocock",
-        "repo": "skills",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1791456040,
@@ -52,28 +36,10 @@
         "type": "github"
       }
     },
-    "ponytail": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791605992,
-        "narHash": "sha256-S2gHV4/c8XPDqpf0jS8Q5r22//6skZjITf2T9CVhVRE=",
-        "owner": "DietrichGebert",
-        "repo": "ponytail",
-        "rev": "9b58c1ffb790c075ca32e70a89cf1d80588f4abf",
-        "type": "github"
-      },
-      "original": {
-        "owner": "DietrichGebert",
-        "repo": "ponytail",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "home-manager": "home-manager",
-        "matt-skills": "matt-skills",
         "nixpkgs": "nixpkgs",
-        "ponytail": "ponytail",
         "workmux": "workmux"
       }
     },

@@ -18,7 +18,7 @@ hosts/<machine>/       host settings + generated hardware-configuration.nix
 modules/               core (boot/user), desktop (hyprland/greetd/pipewire),
                        laptop (power/lid/bluetooth/touchpad)
 home/                  home-manager modules: noctalia, shell, tmux, zed, lsp,
-                       neovim, programs, apps, scripts, skills
+                       neovim, programs, apps, scripts
 hypr/                  hyprland.conf + binds.conf, edited live, NOT in the store
 nvim/                  LazyVim lua/config + lua/plugins, edited live
 tmux/                  tmux.conf, edited live (palette.conf stays runtime)
