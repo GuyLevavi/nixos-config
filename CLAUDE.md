@@ -48,7 +48,7 @@ hypr/                           # hyprland.conf + binds.conf — edited live, NO
 nvim/                           # LazyVim lua/config + lua/plugins (live); no init.lua
 tmux/                           # tmux.conf — edited live (palette.conf stays runtime)
 opencode/                       # opencode.jsonc + tui.json — edited live
-skills/                         # hand-rolled agent skills, symlinked into opencode
+skills/                         # hand-rolled agent skills, symlinked into opencode + claude
 ```
 
 ## Critical Patterns
@@ -135,10 +135,8 @@ is `opencode/opencode.jsonc` (repo-owned, symlinked live); zed's choosing
 `userSettings.languages`. Zed is the default editor (`zeditor -w`); nvim is the
 terminal fallback: LazyVim with every plugin from nixpkgs (`home/neovim.nix`,
 Mason off, nothing cloned) and user config in `nvim/lua/`. Its wrapper appends
-`home/lsp.nix` to PATH, so a dev shell's zls/rust-analyzer win. Zed's `zls` is
-guarded by `executable()` because it is project-scoped (the ziglings flake
-supplies it), not part of `home/lsp.nix`. Panels dock right; `ctrl-b` toggles the right dock
-(there is no left dock for stock `ToggleLeftDock` to open). Extensions are
+`home/lsp.nix` to PATH, so a dev shell's zls/rust-analyzer win. Panels dock
+right; `ctrl-b` toggles the right dock (there is no left dock for stock `ToggleLeftDock` to open). Extensions are
 registry ids downloaded at runtime; removed ones are never uninstalled. With
 `mutableUserSettings = true` activation deep-merges Nix over the live settings
 (Nix wins per key; removed keys linger). Sign-in lives in gnome-keyring.
