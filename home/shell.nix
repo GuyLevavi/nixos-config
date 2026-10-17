@@ -81,7 +81,20 @@
       enable = true;
       enableGitIntegration = true;
     };
-    lazygit.enable = true;
+    lazygit = {
+      enable = true;
+      # `|` cycles pagers. Output is piped, so delta can't detect the background: --dark is its fallback anyway.
+      settings.git.diffRenderers = [
+        {
+          colorArg = "always";
+          command = ''delta --dark --paging=never --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"'';
+        }
+        {
+          type = "extDiff";
+          command = "${pkgs.difftastic}/bin/difft --color=always";
+        }
+      ];
+    };
     gh.enable = true;
   };
 }
