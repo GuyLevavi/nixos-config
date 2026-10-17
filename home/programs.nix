@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, hostName, ... }:
 let
   # One declaration for every editor — see home/lsp.nix.
   lspPackages = import ./lsp.nix { inherit pkgs; };
@@ -24,7 +24,8 @@ in
         theme = "noctalia";
         command = "tmux new-session -A -s main";
         font-family = "JetBrainsMono Nerd Font";
-        font-size = 14;
+        # cpubox renders larger at its scale; one ctrl-minus step.
+        font-size = if hostName == "cpubox" then 13 else 14;
         window-decoration = false;
         # Padding is charged in whole cells here: 2 never costs a column, 4
         # sometimes does, 8 always.
