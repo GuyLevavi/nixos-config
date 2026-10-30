@@ -3,6 +3,7 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = {
+      inlay_hints = { enabled = false },
       servers = {
         nil_ls = { enabled = false }, -- lang.nix's pick; home/lsp.nix ships nixd
         nixd = {},

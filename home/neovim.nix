@@ -5,6 +5,7 @@ let
   lspPackages = import ./lsp.nix { inherit pkgs; };
 
   extras = [
+    "dap.core"
     "lang.nix"
     "lang.python"
     "lang.rust"
@@ -12,6 +13,7 @@ let
     "lang.yaml"
     "lang.toml"
     "lang.clangd"
+    "lang.cmake"
   ];
 
   # LazyVim core + the extras above. A plugin missing here shows as "not
@@ -49,6 +51,12 @@ let
     # extras
     SchemaStore-nvim
     clangd_extensions-nvim
+    cmake-tools-nvim
+    nvim-dap
+    nvim-dap-python
+    nvim-dap-ui
+    nvim-dap-virtual-text
+    nvim-nio
     crates-nvim
     rustaceanvim
     venv-selector-nvim
@@ -87,6 +95,10 @@ let
     name = "nvim-treesitter-grammars";
     paths = pkgs.vimPlugins.nvim-treesitter.withAllGrammars.dependencies;
   };
+  # The extension ships the adapter without a bin/ entry.
+  codelldb = pkgs.writeShellScriptBin "codelldb" ''
+    exec ${pkgs.vscode-extensions.vadimcn.vscode-lldb}/share/vscode/extensions/vadimcn.vscode-lldb/adapter/codelldb "$@"
+  '';
 in
 {
   programs.neovim = {
@@ -109,6 +121,7 @@ in
           ${lib.concatMapStrings (e: ''{ import = "lazyvim.plugins.extras.${e}" },'') extras}
           { "mason-org/mason.nvim", enabled = false },
           { "mason-org/mason-lspconfig.nvim", enabled = false },
+          { "jay-babu/mason-nvim-dap.nvim", enabled = false },
           ${lib.concatMapStrings (p: ''{ dir = "${p}", name = "${p.pname}", lazy = true },'') themes}
           { import = "plugins" },
         },
@@ -127,9 +140,13 @@ in
       pkgs.shfmt
       pkgs.nixfmt
       pkgs.statix
+      pkgs.cmake-lint # lang.cmake
       # snacks.image: non-PNG conversion and LaTeX math
       pkgs.imagemagick
       pkgs.tectonic
+      # dap adapters the lang.python / lang.clangd extras launch by name
+      pkgs.python3Packages.debugpy
+      codelldb
     ];
   };
 

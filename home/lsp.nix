@@ -15,6 +15,7 @@ with pkgs;
   yaml-language-server
   taplo # TOML
   clang-tools # clangd
+  neocmakelsp # CMake
   package-version-server # package.json version hover
   markdown-oxide # Obsidian markdown
 ]
