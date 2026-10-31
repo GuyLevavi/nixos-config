@@ -28,19 +28,19 @@ let
     rb
   '';
 
-  # External-only monitor policy: disable eDP-1 while docked, restore alone.
+  # External-only monitor policy: disable the internal panel while docked,
+  # restore alone. Match eDP-*: the index flips with i915/nvidia-drm load order.
   # State goes in a sourced conf, not a keyword — keywords reset on reload
   # (Noctalia triggers one per theme switch), which flapped the panel.
   monitor-watch = pkgs.writeShellScriptBin "monitor-watch" ''
     set -euo pipefail
-    internal="eDP-1"
     state="$HOME/.config/hypr/monitor-state.conf"
 
     sync_monitors() {
-      external=$(${pkgs.hyprland}/bin/hyprctl -j monitors all \
-        | ${pkgs.jq}/bin/jq "[.[] | select(.name != \"$internal\")] | length")
+      monitors=$(${pkgs.hyprland}/bin/hyprctl -j monitors all)
+      external=$(${pkgs.jq}/bin/jq '[.[] | select(.name | startswith("eDP-") | not)] | length' <<<"$monitors")
       if [ "$external" -gt 0 ]; then
-        want="monitor = $internal, disable"
+        want=$(${pkgs.jq}/bin/jq -r '.[] | select(.name | startswith("eDP-")) | "monitor = \(.name), disable"' <<<"$monitors")
       else
         want="" # empty file -> the per-panel rules in hyprland.conf apply
       fi
