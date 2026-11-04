@@ -1,4 +1,18 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
+let
+  # Noctalia's starship template owns a palette block in this same file, so it
+  # can't be programs.starship.settings (a read-only store symlink).
+  starshipConfig = pkgs.writeText "starship.toml" ''
+    cmake.disabled = true
+    git_branch.format = "[$symbol$branch]($style) "
+    cmd_duration.format = "[$duration]($style) "
+    c.format = "[$symbol]($style)"
+    python.format = "[$symbol($virtualenv )]($style)"
+    # Default ❄️ is emoji+VS16; fish/tmux mis-measure it and erase it on redraw.
+    nix_shell.symbol = " "
+    nix_shell.format = "[$symbol]($style)"
+  '';
+in
 {
   programs = {
     # Keep bash as login shell (modules/core.nix); exec into fish on interactive
@@ -95,4 +109,17 @@
     };
     gh.enable = true;
   };
+
+  # Rewrites everything outside Noctalia's palette block, keeping the block.
+  home.activation.starshipConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    cfg="$HOME/.config/starship.toml"
+    block=$(sed -n '/^# >>> NOCTALIA STARSHIP PALETTE >>>$/,/^# <<< NOCTALIA STARSHIP PALETTE <<<$/p' \
+      "$cfg" 2>/dev/null || true)
+    {
+      if [ -n "$block" ]; then echo 'palette = "noctalia"'; fi
+      cat ${starshipConfig}
+      if [ -n "$block" ]; then printf '\n%s\n' "$block"; fi
+    } >"$cfg.tmp"
+    if cmp -s "$cfg" "$cfg.tmp"; then rm "$cfg.tmp"; else run mv "$cfg.tmp" "$cfg"; fi
+  '';
 }
