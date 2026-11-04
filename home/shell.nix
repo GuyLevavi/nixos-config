@@ -29,8 +29,6 @@
         end
       '';
       shellAliases = {
-        ls = "eza --icons --group-directories-first";
-        ll = "eza -l --icons --git";
         cat = "bat -p";
         lg = "lazygit";
       };

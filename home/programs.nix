@@ -40,7 +40,16 @@ in
     };
 
     bat.enable = true;
-    eza.enable = true;
+    eza = {
+      enable = true;
+      icons = "auto";
+      git = true;
+      # Abbreviated hashes aren't real paths; `command eza` prints full ones.
+      extraOptions = [
+        "--group-directories-first"
+        "--short-nix"
+      ];
+    };
     ripgrep.enable = true;
 
     # gpu0 = dGPU via NVML on gpubox (host overlay adds the driver runpath),
