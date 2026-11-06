@@ -14,6 +14,7 @@ let
     "lang.toml"
     "lang.clangd"
     "lang.cmake"
+    "coding.mini-surround"
   ];
 
   # LazyVim core + the extras above. A plugin missing here shows as "not
@@ -58,6 +59,7 @@ let
     nvim-dap-virtual-text
     nvim-nio
     crates-nvim
+    mini-surround
     rustaceanvim
     venv-selector-nvim
   ];
