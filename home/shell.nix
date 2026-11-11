@@ -2,15 +2,25 @@
 let
   # Noctalia's starship template owns a palette block in this same file, so it
   # can't be programs.starship.settings (a read-only store symlink).
-  starshipConfig = pkgs.writeText "starship.toml" ''
+  # Upstream's no-runtime-versions preset minus "via"/"with", dropping the tables that
+  # starshipOverrides sets as dotted keys (TOML rejects defining a table twice).
+  starshipConfig = pkgs.runCommand "starship.toml" { } ''
+    cat ${starshipOverrides} >$out
+    ${lib.getExe pkgs.starship} preset no-runtime-versions \
+      | awk '/^\[/ { skip = ($0 ~ /^\[(c|cmake|python)\]$/) } !skip' \
+      | sed -E "s/^format = ([\"'])(via|with) /format = \1/" >>$out
+  '';
+  starshipOverrides = pkgs.writeText "starship-overrides.toml" ''
     cmake.disabled = true
+    package.disabled = true
     git_branch.format = "[$symbol$branch]($style) "
     cmd_duration.format = "[$duration]($style) "
     c.format = "[$symbol]($style)"
     python.format = "[$symbol($virtualenv )]($style)"
     # Default ❄️ is emoji+VS16; fish/tmux mis-measure it and erase it on redraw.
     nix_shell.symbol = " "
-    nix_shell.format = "[$symbol]($style)"
+    # The glyph draws wider than its one cell; the extra space keeps it off the next segment.
+    nix_shell.format = "[$symbol]($style) "
   '';
 in
 {
@@ -78,6 +88,7 @@ in
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      silent = true;
     };
 
     git = {
