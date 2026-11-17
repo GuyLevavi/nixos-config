@@ -21,6 +21,14 @@ let
     nix_shell.symbol = " "
     # The glyph draws wider than its one cell; the extra space keeps it off the next segment.
     nix_shell.format = "[$symbol]($style) "
+    # Marks a nu nested in fish; empty indicators keep fish/bash prompts unchanged.
+    shell.disabled = false
+    shell.fish_indicator = ""
+    shell.bash_indicator = ""
+    # The space lives in the indicator: a "( )" group around a styled one never renders.
+    shell.nu_indicator = "nu "
+    shell.style = "bold green"
+    shell.format = "[$indicator]($style)"
   '';
 in
 {
@@ -58,20 +66,29 @@ in
       };
     };
 
+    # Secondary shell, started from fish; never a login shell.
+    nushell = {
+      enable = true;
+      settings.show_banner = false;
+    };
+
     starship = {
       enable = true;
       enableBashIntegration = false;
       enableFishIntegration = true;
+      enableNushellIntegration = true;
     };
     zoxide = {
       enable = true;
       enableBashIntegration = false;
       enableFishIntegration = true;
+      enableNushellIntegration = true;
     };
     atuin = {
       enable = true;
       enableBashIntegration = false;
       enableFishIntegration = true;
+      enableNushellIntegration = true;
       settings = {
         auto_sync = false;
         update_check = false;
@@ -88,6 +105,7 @@ in
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      enableNushellIntegration = true;
       silent = true;
     };
 
