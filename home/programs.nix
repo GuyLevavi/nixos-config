@@ -1,4 +1,4 @@
-{ pkgs, hostName, ... }:
+{ pkgs, inputs, hostName, ... }:
 let
   # One declaration for every editor — see home/lsp.nix.
   lspPackages = import ./lsp.nix { inherit pkgs; };
@@ -96,6 +96,8 @@ in
 
     # dev
     uv
+    # FHS variant so npx/uvx MCP servers find a normal /usr layout
+    inputs.claude-desktop.packages.${pkgs.stdenv.hostPlatform.system}.claude-desktop-fhs
     claude-code # LSP stays plugin-per-language at runtime; no PATH wrapper
     opencodeWithLsp # opencode + the shared language-server PATH
   ];
