@@ -31,6 +31,10 @@
     "markdown-oxide": {
       "command": ["markdown-oxide"],
       "extensions": [".md", ".markdown"]
+    },
+    "nu": {
+      "command": ["nu", "--lsp"],
+      "extensions": [".nu"]
     }
   }
 }

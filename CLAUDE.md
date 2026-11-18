@@ -124,6 +124,8 @@ interactive start unless the parent is fish (you typed it) or there is no tty
 (Zed captures its env with `bash -l -i -c`; an unconditional exec eats the
 command and worktrees lose their PATH). starship/zoxide/atuin/fzf use
 home-manager's `enableFishIntegration`.
+nushell is secondary: typed from fish, never a login shell, with the same
+integrations; starship's `shell` module prints `nu` only there.
 
 ### Editors: Zed + Neovim + OpenCode
 

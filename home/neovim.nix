@@ -14,6 +14,7 @@ let
     "lang.toml"
     "lang.clangd"
     "lang.cmake"
+    "lang.nushell"
     "coding.mini-surround"
   ];
 

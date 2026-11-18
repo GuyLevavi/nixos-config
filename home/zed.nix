@@ -16,6 +16,7 @@ in
       "env"
       "basedpyright"
       "markdown-oxide"
+      "nu"
       # Palette-sync map targets (home/noctalia.nix); gruvbox/ayu ship with zed.
       "tokyo-night"
       "catppuccin"

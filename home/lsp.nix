@@ -18,4 +18,5 @@ with pkgs;
   neocmakelsp # CMake
   package-version-server # package.json version hover
   markdown-oxide # Obsidian markdown
+  nushell # `nu --lsp`
 ]
