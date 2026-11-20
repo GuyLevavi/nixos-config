@@ -98,7 +98,7 @@ let
         ' "$theme_file")"
         [ -n "$p4" ] || return 1
 
-        primary="$(awk -F'[()]' '/^\$primary *= *rgb/{print "#" $2}' "$cfg/hypr/noctalia.conf" 2>/dev/null || true)"
+        primary="$(awk -F'[()]' '/^local primary *= *"rgb/{print "#" $2}' "$cfg/hypr/noctalia.lua" 2>/dev/null || true)"
         [ -n "$primary" ] || primary="$p4"
       }
 
@@ -261,7 +261,7 @@ let
     fill = "surface";
     opacity = 0.85;
     padding = 6;
-    radius = 8; # matches hypr/hyprland.conf decoration.rounding
+    radius = 8; # matches hypr/hyprland.lua decoration.rounding
   };
 
   # gpubox is PRIME sync (dGPU always on, real NVML stats); cpubox's iGPU has no

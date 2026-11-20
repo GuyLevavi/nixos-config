@@ -33,7 +33,7 @@ Zed's `settings.json` is co-owned: every `rb` deep-merges Nix over it.
 
 ## Things that will bite you
 
-- **Never `git checkout`/`reset`/`clean` `hypr/hyprland.conf` while Hyprland
+- **Never `git checkout`/`reset`/`clean` `hypr/hyprland.lua` while Hyprland
   runs** — its watcher writes a stub over the file. Restore it, then
   `hyprctl reload`.
 - **Do not enable TLP.** It conflicts with power-profiles-daemon, which
@@ -41,9 +41,9 @@ Zed's `settings.json` is co-owned: every `rb` deep-merges Nix over it.
 - **Firefox theming** needs `toolkit.legacyUserProfileCustomizations.stylesheets
   = true` in `about:config`, or it fails silently.
 - **Noctalia follows nixpkgs.** A bump can rename config keys (build fails) or
-  IPC verbs in `hypr/binds.conf` (fails only at runtime).
+  IPC verbs in `hypr/binds.lua` (fails only at runtime).
 - **`open = true`** in `hosts/gpubox/nvidia.nix` needs Turing or newer (the
   RTX 4060 is Ada).
 
 Dropping Noctalia touches only `home/noctalia.nix`, `programs.noctalia` in
-`modules/desktop.nix`, and the `noctalia msg` lines in `hypr/binds.conf`.
+`modules/desktop.nix`, and the `noctalia msg` lines in `hypr/binds.lua`.

@@ -49,8 +49,8 @@ in
 
   xdg = {
     configFile = {
-      "hypr/hyprland.conf".source = live "hypr/hyprland.conf";
-      "hypr/binds.conf".source = live "hypr/binds.conf";
+      "hypr/hyprland.lua".source = live "hypr/hyprland.lua";
+      "hypr/binds.lua".source = live "hypr/binds.lua";
       "nvim".source = live "nvim";
       "tmux/tmux.conf".source = live "tmux/tmux.conf";
       "opencode/opencode.jsonc".source = live "opencode/opencode.jsonc";

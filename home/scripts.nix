@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 let
   screen-record = pkgs.writeShellScriptBin "screen-record" ''
     set -euo pipefail
@@ -30,19 +30,19 @@ let
 
   # External-only monitor policy: disable the internal panel while docked,
   # restore alone. Match eDP-*: the index flips with i915/nvidia-drm load order.
-  # State goes in a sourced conf, not a keyword — keywords reset on reload
+  # State goes in a required file, not a runtime keyword — those reset on reload
   # (Noctalia triggers one per theme switch), which flapped the panel.
   monitor-watch = pkgs.writeShellScriptBin "monitor-watch" ''
     set -euo pipefail
-    state="$HOME/.config/hypr/monitor-state.conf"
+    state="$HOME/.config/hypr/monitor-state.lua"
 
     sync_monitors() {
       monitors=$(${pkgs.hyprland}/bin/hyprctl -j monitors all)
       external=$(${pkgs.jq}/bin/jq '[.[] | select(.name | startswith("eDP-") | not)] | length' <<<"$monitors")
       if [ "$external" -gt 0 ]; then
-        want=$(${pkgs.jq}/bin/jq -r '.[] | select(.name | startswith("eDP-")) | "monitor = \(.name), disable"' <<<"$monitors")
+        want=$(${pkgs.jq}/bin/jq -r '.[] | select(.name | startswith("eDP-")) | "hl.monitor({ output = \"\(.name)\", disabled = true })"' <<<"$monitors")
       else
-        want="" # empty file -> the per-panel rules in hyprland.conf apply
+        want="" # empty file -> the per-panel rules in hyprland.lua apply
       fi
       if [ "$want" != "$(cat "$state" 2>/dev/null || true)" ]; then
         printf '%s\n' "$want" > "$state"
@@ -66,11 +66,4 @@ in
     update
     monitor-watch
   ];
-
-  # hyprland.conf sources this; Hyprland errors on a missing source, so create
-  # it on a fresh install. monitor-watch owns its content from then on.
-  home.activation.ensureMonitorStateConf = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    [ -f "$HOME/.config/hypr/monitor-state.conf" ] \
-      || install -Dm644 /dev/null "$HOME/.config/hypr/monitor-state.conf"
-  '';
 }

@@ -8,7 +8,7 @@ Guidance for agents working in this repo. Design rationale lives in
 ```fish
 rb              # cd /etc/nixos && git add -A && sudo nixos-rebuild switch --flake /etc/nixos#(hostname)
 update          # nix flake update && rb
-hyprctl reload  # apply hypr/*.conf changes without logging out or rebuilding
+hyprctl reload  # apply hypr/*.lua changes without logging out or rebuilding
 ```
 
 ```bash
@@ -44,7 +44,7 @@ home/neovim.nix                 # LazyVim bootstrap + nixpkgs plugin set + gramm
 home/programs.nix               # terminal, core CLI, media tools
 home/apps.nix                   # obsidian + rclone Google Drive bisync, spotify
 home/scripts.nix                # rb / update / screen-record / monitor-watch
-hypr/                           # hyprland.conf + binds.conf — edited live, NOT in the nix store
+hypr/                           # hyprland.lua + binds.lua (Lua config, 0.57+) — edited live, NOT in the nix store
 nvim/                           # LazyVim lua/config + lua/plugins (live); no init.lua
 tmux/                           # tmux.conf — edited live (palette.conf stays runtime)
 opencode/                       # opencode.jsonc + tui.json — edited live
@@ -60,7 +60,7 @@ skills/                         # hand-rolled agent skills, symlinked into openc
 `home/noctalia.nix` (`systemd.enable = true`) — do not flip both on.
 
 Geometry is one constant, 8: `gaps_out = 8` / `gaps_in = 4` in
-`hypr/hyprland.conf`, mirrored by `margin_edge` / `padding` / `widget_spacing`
+`hypr/hyprland.lua`, mirrored by `margin_edge` / `padding` / `widget_spacing`
 = 8 with `margin_ends = 0` in `home/noctalia.nix`. Change both sides together.
 `margin_ends` and `padding` stack, so `margin_ends` must stay 0. Radii follow
 the concentric rule (`outer = inner + gap`): windows/islands 8, workspace pills
@@ -77,12 +77,14 @@ unattended — with logind's lid-close suspend as the off-AC backstop.
 `media` sits at the head of `end` because that lane is right-anchored: titles
 grow leftward without shifting the island, unlike `start`.
 
-`hypr/hyprland.conf` and `hypr/binds.conf` are symlinked out of the store from
+`hypr/hyprland.lua` and `hypr/binds.lua` are symlinked out of the store from
 `/etc/nixos/hypr/` (`home/default.nix`) — edit them and `hyprctl reload`.
 Never `git checkout`/`reset` them while Hyprland runs: its config watcher
-regenerates a stub over the live file. Two runtime-written sourced files are
-not in the repo: `~/.config/hypr/noctalia.conf` (theme colours) and
-`monitor-state.conf` (monitor-watch).
+regenerates a stub over the live file. `require()` resolves in
+`~/.config/hypr`, where two runtime-written modules live outside the repo:
+`noctalia.lua` (theme colours) and `monitor-state.lua` (monitor-watch). Both
+are `pcall`ed, and the literal `require("noctalia")` must stay in
+`hyprland.lua` or Noctalia appends one through the symlink.
 
 The same out-of-store pattern covers `nvim/`, `tmux/tmux.conf`,
 `opencode/{opencode.jsonc,tui.json}` and `skills/` (`home/default.nix`);
@@ -102,7 +104,7 @@ per-key. btop is split: theme file runtime-owned, `btop.conf` Nix-owned with
 Zed/tmux/nvim/opencode have no Noctalia template. One hook script
 (`noctalia-theme-sync`, `home/noctalia.nix`) rewrites the zed theme block,
 `~/.config/tmux/palette.conf` (accent read from nvim's lualine normal mode via
-headless nvim, so `sync_nvim` runs first; Noctalia's `$primary` for
+headless nvim, so `sync_nvim` runs first; `primary` from `hypr/noctalia.lua` for
 non-builtin palettes), `~/.local/state/nvim/theme.lua` (a
 hand-tuned colorscheme plugin per builtin theme, from nixpkgs in
 `home/neovim.nix`) and the opencode theme: a palette-derived custom theme
