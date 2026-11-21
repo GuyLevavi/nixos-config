@@ -356,6 +356,8 @@ in
         };
         # Icon only; the expanded view has the SSID.
         network.show_label = false;
+        # Claude Desktop's SNI: left-click is a no-op on Linux. Exact-match id.
+        tray.hidden = [ "Claude_status_icon_1" ];
       }
       // lib.optionalAttrs (hostName == "gpubox") {
         # Glyphs mirror the CPU island row-for-row.
